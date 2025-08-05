@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Montres de Luxe</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background-color: #f0f0f0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 10px;
+    }
+
+    .main-display {
+      position: relative;
+      height: 400px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      background: url('images/montre1-2.avif') center/cover no-repeat;
+      cursor: pointer;
+    }
+
+    .main-display::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    .info {
+      position: absolute;
+      z-index: 2;
+      color: white;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 15px;
+      border-radius: 10px;
+      max-width: 80%;
+    }
+
+    .info h1 {
+      margin: 0 0 10px;
+      font-size: 1.8em;
+    }
+
+    .info p {
+      margin: 5px 0;
+      font-size: 1em;
+    }
+
+    .gallery {
+      display: flex;
+      margin-top: 15px;
+      gap: 10px;
+    }
+
+    .gallery img {
+      flex: 1;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      position: relative;
+      max-width: 90%;
+      max-height: 90%;
+    }
+
+    .modal-content img {
+      width: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 10px;
+    }
+
+    .close, .prev, .next {
+      position: absolute;
+      color: white;
+      font-size: 2em;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 10px;
+      border-radius: 50%;
+      border: none;
+      z-index: 1000;
+    }
+
+    .close {
+      top: 10px;
+      right: 20px;
+    }
+
+    .prev {
+      top: 50%;
+      left: -50px;
+      transform: translateY(-50%);
+    }
+
+    .next {
+      top: 50%;
+      right: -50px;
+      transform: translateY(-50%);
+    }
+
+    @media (max-width: 768px) {
+      .prev, .next {
+        left: 10px;
+        right: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Grande image cliquable -->
+    <div class="main-display" onclick="openModal(1)">
+      <div class="info">
+        <h1>Montre Zenith Elite</h1>
+        <p>Prix : 8 500 €</p>
+        <p>Mouvement automatique, boîtier titane, bracelet cuir italien, étanche 50 m.</p>
+      </div>
+    </div>
+
+    <!-- Miniatures -->
+    <div class="gallery">
+      <img src="images/montre1-1.avif" alt="Vue 1" onclick="openModal(0)">
+      <img src="images/montre1-3.avif" alt="Vue 3" onclick="openModal(2)">
+      <img src="images/montre1-4.avif" alt="Vue 4" onclick="openModal(3)">
+    </div>
+  </div>
+
+  <!-- Modale avec navigation -->
+  <div class="modal" id="imageModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">✖</span>
+      <span class="prev" onclick="prevImage()">◀</span>
+      <img id="modalImage" src="" alt="Image de montre">
+      <span class="next" onclick="nextImage()">▶</span>
+    </div>
+  </div>
+
+  <script>
+    const images = [
+      "images/montre1-1.avif", // index 0
+      "images/montre1-2.avif", // index 1 = image principale
+      "images/montre1-3.avif", // index 2
+      "images/montre1-4.avif"  // index 3
+    ];
+
+    let currentIndex = 0;
+
+    function openModal(index) {
+      currentIndex = index;
+      document.getElementById('modalImage').src = images[currentIndex];
+      document.getElementById('imageModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('imageModal').style.display = 'none';
+    }
+
+    function nextImage() {
+      currentIndex = (currentIndex + 1) % images.length;
+      document.getElementById('modalImage').src = images[currentIndex];
+    }
+
+    function prevImage() {
+      currentIndex = (currentIndex - 1 + images.length) % images.length;
+      document.getElementById('modalImage').src = images[currentIndex];
+    }
+
+    // Fermer si clic en dehors
+    window.onclick = function(event) {
+      const modal = document.getElementById('imageModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+  </script>
+</body>
+</html>
