@@ -92,7 +92,39 @@
         <tbody></tbody>
 
     </table>
-<script src="js/config.js"></script>
+
+    <!-- MODALE ÉDITION -->
+    <div id="editModal"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#000c; z-index:9999; justify-content:center; align-items:center;">
+        <div
+            style="background:#222; padding:20px; color:white; max-width:500px; width:90%; border-radius:10px; position:relative;">
+            <h2>Modifier la montre</h2>
+            <form id="editForm">
+                <input type="hidden" name="index" />
+                <label>Nom <input type="text" name="nom" required></label>
+                <label>Prix <input type="number" name="prix" required></label>
+                <label>Description <textarea name="description" rows="3" required></textarea></label>
+                <div>
+                    <label>Image 1 <br><img id="imgPreview1" src="" height="50"><br><input type="file" name="image1"
+                            accept="image/*"></label><br>
+                    <label>Image 2 <br><img id="imgPreview2" src="" height="50"><br><input type="file" name="image2"
+                            accept="image/*"></label><br>
+                    <label>Image 3 <br><img id="imgPreview3" src="" height="50"><br><input type="file" name="image3"
+                            accept="image/*"></label><br>
+                    <label>Image 4 <br><img id="imgPreview4" src="" height="50"><br><input type="file" name="image4"
+                            accept="image/*"></label>
+                </div>
+                <button type="submit">💾 Enregistrer</button>
+                <button type="button" onclick="closeEditModal()">❌ Annuler</button>
+            </form>
+        </div>
+    </div>
+
+
+
+
+
+    <script src="js/config.js"></script>
     <script>
         let montres = [];
 
@@ -116,7 +148,12 @@
       <td>${m.prix} €</td>
       <td>${m.description}</td>
       <td><img src="${m.image2}" alt="${m.nom}"></td>
-      <td><button onclick="deleteMontre(${index})">🗑️</button></td>
+     <td>
+        <button onclick="openEditModal(${index})">📝</button>
+        <button onclick="openEditImagesModal(${index})">🖼️</button>
+        <button onclick="deleteMontre(${index})">🗑️</button>
+    </td>
+
     `;
                 tbody.appendChild(tr);
             });
@@ -193,6 +230,88 @@
         }
 
         window.onload = fetchData;
+
+
+        function openEditModal(index) {
+            const montre = montres[index];
+            const form = document.getElementById("editForm");
+
+            form.index.value = index;
+            form.nom.value = montre.nom;
+            form.prix.value = montre.prix;
+            form.description.value = montre.description;
+
+            document.getElementById("imgPreview1").src = montre.image1;
+            document.getElementById("imgPreview2").src = montre.image2;
+            document.getElementById("imgPreview3").src = montre.image3;
+            document.getElementById("imgPreview4").src = montre.image4;
+
+            document.getElementById("editModal").style.display = "flex";
+        }
+
+        function closeEditModal() {
+            document.getElementById("editModal").style.display = "none";
+            document.getElementById("editForm").reset();
+        }
+
+
+        function closeEditModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+
+        document.getElementById("editForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const form = e.target;
+            const index = form.index.value;
+
+            const old = montres[index];
+
+            const formData = new FormData();
+            const imageForm = new FormData();
+
+            // Champs texte
+            formData.append("action", "edit");
+            formData.append("id", index);
+            formData.append("nom", form.nom.value);
+            formData.append("prix", form.prix.value);
+            formData.append("description", form.description.value);
+
+            // Images
+            for (let i = 1; i <= 4; i++) {
+                const file = form[`image${i}`].files[0];
+                if (file) {
+                    const filename = "images/" + file.name;
+                    formData.append(`image${i}`, filename);
+                    imageForm.append(`image${i}`, file);
+                } else {
+                    formData.append(`image${i}`, old[`image${i}`]);
+                }
+            }
+
+            // Upload images si nouvelles
+            if (imageForm.has("image1") || imageForm.has("image2") || imageForm.has("image3") || imageForm.has("image4")) {
+                await fetch("upload-images.php", {
+                    method: "POST",
+                    body: imageForm
+                });
+            }
+
+            // Envoi au Google Sheet
+            fetch(GOOGLE_API_URL, {
+                method: "POST",
+                body: formData
+            })
+                .then(res => res.text())
+                .then(msg => {
+                    alert("✅ Modifications enregistrées : " + msg);
+                    closeEditModal();
+                    fetchData();
+                })
+                .catch(err => {
+                    alert("Erreur modification : " + err);
+                });
+        });
+
     </script>
 </body>
 
