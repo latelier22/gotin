@@ -35,7 +35,7 @@
         }
 
         img {
-            height: 60px;
+            height: 100px;
             border-radius: 6px;
         }
 
@@ -60,6 +60,19 @@
         input[type="file"] {
             display: none;
         }
+
+        .thumbs img {
+  height: 100px;
+  margin: 2px;
+  cursor: pointer;
+  border-radius: 5px;
+  border: 1px solid #444;
+  transition: transform 0.2s;
+}
+.thumbs img:hover {
+  transform: scale(1.1);
+}
+
     </style>
 </head>
 
@@ -68,6 +81,7 @@
     <h1>Exporter ou mettre à jour les montres</h1>
 
     <div class="buttons">
+        <button onclick="window.location.href='https://docs.google.com/spreadsheets/d/1RImwBSEucX0d6chHduucER-GVvM_nzlSFmvAjlQnScg/edit?usp=sharing'">GoogleSheet</button>
         <button onclick="downloadCSV()">⬇️ Télécharge rmontres de GoogleSheet</button>
 
         <button onclick="replaceCSVFromData()">📤 Exporter Montres Google vers vers le serveur</button>
@@ -117,6 +131,36 @@
         </div>
     </div>
 
+    <!-- MODALE POUR SLIDER -->
+<div id="modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center; flex-direction:column;">
+  <button onclick="closeModal()" style="position:absolute; top:10px; right:10px; background:#FFD700; color:#111; font-weight:bold; font-size:20px; border:none; border-radius:5px; padding:5px 10px; cursor:pointer;">✖</button>
+  <img id="modal-image" src="" style="max-width:80vw; max-height:80vh; margin-bottom:10px;" />
+  <div>
+    <button onclick="prevImage()" style="margin:10px; font-size:25px;">⬅️</button>
+    <button onclick="nextImage()" style="margin:10px; font-size:25px;">➡️</button>
+  </div>
+</div>
+
+<div id="spinner" style="
+  display:none;
+  position:fixed;
+  top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.7);
+  z-index:9999;
+  justify-content:center;
+  align-items:center;
+">
+  <div style="border:6px solid #FFD700; border-top:6px solid transparent; border-radius:50%; width:60px; height:60px; animation:spin 1s linear infinite;"></div>
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
+
 
 
 
@@ -127,10 +171,13 @@
 
         async function fetchData() {
             try {
+                showSpinner();
                 const res = await fetch(GOOGLE_API_URL);
                 montres = await res.json();
+                hideSpinner();
                 displayTable();
             } catch (e) {
+                hideSpinner();
                 alert("Erreur de chargement : " + e);
             }
         }
@@ -144,10 +191,15 @@
       <td>${m.nom}</td>
       <td>${m.prix} €</td>
       <td>${m.description}</td>
-      <td><img src="${m.image2}" alt="${m.nom}"></td>
+     <td>
+    <div class="thumbs">
+      ${[m.image1, m.image2, m.image3, m.image4].map((img, i) => `
+        <img src="${img}" alt="img${i}" onclick="openModal([${[m.image1, m.image2, m.image3, m.image4].map(i => `'${i}'`).join(',')}], ${i})">
+      `).join('')}
+    </div>
+  </td>
      <td>
         <button onclick="openEditModal(${index})">📝</button>
-        <button onclick="openEditImagesModal(${index})">🖼️</button>
         <button onclick="deleteMontre(${index})">🗑️</button>
     </td>
 
@@ -157,24 +209,29 @@
         }
 
         function deleteMontre(index) {
-            if (!confirm("Supprimer cette montre ?")) return;
+  if (!confirm("Supprimer cette montre ?")) return;
 
-            fetch(GOOGLE_API_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "delete",
-                    id: index
-                })
-            })
-                .then(res => res.text())
-                .then(msg => {
-                    alert("⛔️ Montre supprimée : " + msg);
-                    fetchData(); // recharge
-                })
-                .catch(err => {
-                    alert("Erreur : " + err);
-                });
-        }
+  const formData = new FormData();
+  formData.append("action", "delete");
+  formData.append("id", index);
+
+  showSpinner();
+
+  fetch(GOOGLE_API_URL, {
+    method: "POST",
+    body: formData
+  })
+    .then(res => res.text())
+    .then(msg => {
+      hideSpinner();
+      alert("⛔️ Montre supprimée : " + msg);
+      fetchData(); // recharge
+    })
+    .catch(err => {
+      hideSpinner();
+      alert("Erreur : " + err);
+    });
+}
 
         function downloadCSV() {
             const headers = ["id", "nom", "prix", "description", "image1", "image2", "image3", "image4", "images"];
@@ -256,62 +313,8 @@
             document.getElementById("editModal").style.display = "none";
         }
 
-        document.getElementById("editForm").addEventListener("submit", async function (e) {
-            e.preventDefault();
-            const form = e.target;
-            const index = form.index.value;
-
-            const old = montres[index];
-
-            const formData = new FormData();
-            const imageForm = new FormData();
-
-            // Champs texte
-            formData.append("action", "edit");
-            formData.append("id", index);
-            formData.append("nom", form.nom.value);
-            formData.append("prix", form.prix.value);
-            formData.append("description", form.description.value);
-
-            // Images
-            for (let i = 1; i <= 4; i++) {
-                const file = form[`image${i}`].files[0];
-                if (file) {
-                    const filename = "images/" + file.name;
-                    formData.append(`image${i}`, filename);
-                    imageForm.append(`image${i}`, file);
-                } else {
-                    formData.append(`image${i}`, old[`image${i}`]);
-                }
-            }
-
-            // Upload images si nouvelles
-            if (imageForm.has("image1") || imageForm.has("image2") || imageForm.has("image3") || imageForm.has("image4")) {
-                await fetch("upload-images.php", {
-                    method: "POST",
-                    body: imageForm
-                });
-            }
-
-            // Envoi au Google Sheet
-            fetch(GOOGLE_API_URL, {
-                method: "POST",
-                body: formData
-            })
-                .then(res => res.text())
-                .then(msg => {
-                    alert("✅ Modifications enregistrées : " + msg);
-                    closeEditModal();
-                    fetchData();
-                })
-                .catch(err => {
-                    alert("Erreur modification : " + err);
-                });
-        });
-
-
         function replaceCSVFromData() {
-  const headers = ["id", "nom", "prix", "description", "image1", "image2", "image3", "image4", "images"];
+  const headers = ["id", "nom", "prix", "description", "image1", "image2", "image3", "image4"];
   const rows = montres.map((m, i) =>
     headers.map(h => {
       const value = h === "id" ? i : (m[h] || "");
@@ -327,19 +330,106 @@
   const blob = new Blob([csvContent], { type: 'text/csv' });
   const formData = new FormData();
   formData.append("csvFile", blob, "montres.csv");
-
+    showSpinner();
   fetch("upload.php", {
     method: "POST",
     body: formData
   })
     .then(res => res.text())
     .then(msg => {
+        hideSpinner();
       alert("✅ Fichier CSV mis à jour sur le serveur :\n" + msg);
     })
     .catch(err => {
+        hideSpinner();
       alert("❌ Erreur lors de l'envoi : " + err);
     });
 }
+
+let currentImages = [];
+let currentIndex = 0;
+
+function openModal(images, startIndex) {
+  currentImages = images;
+  currentIndex = startIndex;
+  document.getElementById("modal-image").src = currentImages[currentIndex];
+  document.getElementById("modal").style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+}
+
+function prevImage() {
+  currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
+  document.getElementById("modal-image").src = currentImages[currentIndex];
+}
+
+function nextImage() {
+  currentIndex = (currentIndex + 1) % currentImages.length;
+  document.getElementById("modal-image").src = currentImages[currentIndex];
+}
+
+function showSpinner() {
+  document.getElementById("spinner").style.display = "flex";
+}
+function hideSpinner() {
+  document.getElementById("spinner").style.display = "none";
+}
+
+document.getElementById("editForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const index = form.index.value;
+    const old = montres[index];
+
+    const formData = new FormData();
+
+    formData.append("action", "edit");
+    formData.append("id", index);
+    formData.append("nom", form.nom.value);
+    formData.append("prix", form.prix.value);
+    formData.append("description", form.description.value);
+
+    const imageForm = new FormData();
+
+    for (let i = 1; i <= 4; i++) {
+        const file = form[`image${i}`].files[0];
+        if (file) {
+            formData.append(`image${i}`, "images/" + file.name);
+            imageForm.append(`image${i}`, file);
+        } else {
+            formData.append(`image${i}`, old[`image${i}`]);
+        }
+    }
+
+    showSpinner();
+
+    try {
+        if (imageForm.has("image1") || imageForm.has("image2") || imageForm.has("image3") || imageForm.has("image4")) {
+            await fetch("upload-images.php", {
+                method: "POST",
+                body: imageForm
+            });
+        }
+
+        const res = await fetch(GOOGLE_API_URL, {
+            method: "POST",
+            body: formData
+        });
+
+        const msg = await res.text();
+        alert("✅ Montre modifiée : " + msg);
+        closeEditModal();
+        fetchData();
+    } catch (err) {
+        alert("❌ Erreur lors de la modification : " + err);
+    } finally {
+        hideSpinner();
+    }
+});
+
 
     </script>
 </body>

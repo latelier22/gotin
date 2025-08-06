@@ -80,70 +80,63 @@
   </form>
 
   <script src="js/config.js"></script>
-  <script>
-    const form = document.getElementById("montreForm");
+<script>
+  const form = document.getElementById("montreForm");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      const formData = new FormData(form);
+    const formData = new FormData(form);
 
-      // Préparer le FormData pour les images uniquement
-      const imageForm = new FormData();
-      const imageFiles = ["image1", "image2", "image3", "image4"];
-      imageFiles.forEach(name => {
-        const file = formData.get(name);
-        if (file && file.name) {
-          imageForm.append(name, file);
-        }
-      });
+    // Étape 1 : Upload des images
+    const imageForm = new FormData();
+    const imagePaths = [];
 
-      // Étape 1 : upload des images
-      try {
-        const uploadRes = await fetch("upload-images.php", {
-          method: "POST",
-          body: imageForm
-        });
-        const uploadResult = await uploadRes.json();
-        console.log("Résultat upload images :", uploadResult);
-      } catch (err) {
-        alert("❌ Erreur upload images : " + err);
-        return;
-      }
-
-      // Étape 2 : envoyer les données vers Google Sheets
-      const payload = {
-        nom: formData.get("nom"),
-        prix: formData.get("prix"),
-        description: formData.get("description"),
-        image1: "images/" + formData.get("image1").name,
-        image2: "images/" + formData.get("image2").name,
-        image3: "images/" + formData.get("image3").name,
-        image4: "images/" + formData.get("image4").name,
-        images: [
-          "images/" + formData.get("image1").name,
-          "images/" + formData.get("image2").name,
-          "images/" + formData.get("image3").name,
-          "images/" + formData.get("image4").name
-        ]
-      };
-
-      try {
-        const res = await fetch(
-          GOOGLE_API_URL,
-          {
-            method: "POST",
-            body: JSON.stringify(payload)
-          }
-        );
-        const result = await res.text();
-        alert("✅ Données envoyées : " + result);
-        form.reset();
-      } catch (err) {
-        alert("❌ Erreur envoi données Google Sheets : " + err);
+    ["image1", "image2", "image3", "image4"].forEach(name => {
+      const file = formData.get(name);
+      if (file && file.name) {
+        imageForm.append(name, file);
+        imagePaths.push("images/" + file.name);
       }
     });
-  </script>
+
+    try {
+      const uploadRes = await fetch("upload-images.php", {
+        method: "POST",
+        body: imageForm
+      });
+      const uploadResult = await uploadRes.json();
+      console.log("Résultat upload images :", uploadResult);
+    } catch (err) {
+      alert("❌ Erreur upload images : " + err);
+      return;
+    }
+
+    // Étape 2 : envoyer les données via FormData (pas JSON)
+    const dataForm = new FormData();
+    dataForm.append("action", "add");
+    dataForm.append("nom", formData.get("nom"));
+    dataForm.append("prix", formData.get("prix"));
+    dataForm.append("description", formData.get("description"));
+    dataForm.append("image1", imagePaths[0]);
+    dataForm.append("image2", imagePaths[1]);
+    dataForm.append("image3", imagePaths[2]);
+    dataForm.append("image4", imagePaths[3]);
+    
+
+    try {
+      const res = await fetch(GOOGLE_API_URL, {
+        method: "POST",
+        body: dataForm
+      });
+      const result = await res.text();
+      alert("✅ Données envoyées : " + result);
+      window.location.href = "maj.html";
+    } catch (err) {
+      alert("❌ Erreur envoi données Google Sheets : " + err);
+    }
+  });
+</script>
 
 </body>
 </html>
