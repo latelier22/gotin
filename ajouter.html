@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Ajouter une montre</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #111;
+      color: #FFD700;
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      font-weight: bold;
+      background-color: #FFD700;
+      border: none;
+      color: #111;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    input[type="file"] {
+      background-color: #222;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Ajouter une montre</h1>
+
+  <form id="montreForm">
+    <label>Nom</label>
+    <input type="text" name="nom" required>
+
+    <label>Prix (€)</label>
+    <input type="number" name="prix" required>
+
+    <label>Description</label>
+    <textarea name="description" rows="4" required></textarea>
+
+    <label>Image 1</label>
+    <input type="file" name="image1" accept="image/*" required>
+
+    <label>Image 2</label>
+    <input type="file" name="image2" accept="image/*" required>
+
+    <label>Image 3</label>
+    <input type="file" name="image3" accept="image/*" required>
+
+    <label>Image 4</label>
+    <input type="file" name="image4" accept="image/*" required>
+
+    <button type="submit">📤 Envoyer</button>
+  </form>
+
+  <script src="js/config.js"></script>
+  <script>
+    const form = document.getElementById("montreForm");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+
+      // Préparer le FormData pour les images uniquement
+      const imageForm = new FormData();
+      const imageFiles = ["image1", "image2", "image3", "image4"];
+      imageFiles.forEach(name => {
+        const file = formData.get(name);
+        if (file && file.name) {
+          imageForm.append(name, file);
+        }
+      });
+
+      // Étape 1 : upload des images
+      try {
+        const uploadRes = await fetch("upload-images.php", {
+          method: "POST",
+          body: imageForm
+        });
+        const uploadResult = await uploadRes.json();
+        console.log("Résultat upload images :", uploadResult);
+      } catch (err) {
+        alert("❌ Erreur upload images : " + err);
+        return;
+      }
+
+      // Étape 2 : envoyer les données vers Google Sheets
+      const payload = {
+        nom: formData.get("nom"),
+        prix: formData.get("prix"),
+        description: formData.get("description"),
+        image1: "images/" + formData.get("image1").name,
+        image2: "images/" + formData.get("image2").name,
+        image3: "images/" + formData.get("image3").name,
+        image4: "images/" + formData.get("image4").name,
+        images: [
+          "images/" + formData.get("image1").name,
+          "images/" + formData.get("image2").name,
+          "images/" + formData.get("image3").name,
+          "images/" + formData.get("image4").name
+        ]
+      };
+
+      try {
+        const res = await fetch(
+          GOOGLE_API_URL,
+          {
+            method: "POST",
+            body: JSON.stringify(payload)
+          }
+        );
+        const result = await res.text();
+        alert("✅ Données envoyées : " + result);
+        form.reset();
+      } catch (err) {
+        alert("❌ Erreur envoi données Google Sheets : " + err);
+      }
+    });
+  </script>
+
+</body>
+</html>

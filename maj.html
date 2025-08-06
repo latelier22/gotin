@@ -2,62 +2,197 @@
 <html lang="fr">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Exporter les montres en CSV</title>
+    <meta charset="UTF-8" />
+    <title>Mise à jour des Montres</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #111;
+            color: #FFD700;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #FFD700;
+            margin-bottom: 20px;
+        }
+
+        table {
+            margin: auto;
+            border-collapse: collapse;
+            width: 90%;
+            background: #222;
+            color: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #555;
+            padding: 10px;
+        }
+
+        img {
+            height: 60px;
+            border-radius: 6px;
+        }
+
+        button,
+        label.upload {
+            margin: 10px;
+            padding: 12px 25px;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            background-color: #FFD700;
+            color: #111;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .buttons {
+            margin-top: 20px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+    </style>
 </head>
 
-<body style="font-family:sans-serif; background:#111; color:#D4AF37; text-align:center; padding:30px">
-    <h1>Exporter les données des montres</h1>
-    <button id="exportBtn" style="font-size:1.5em; padding:10px 20px;">📥 Télécharger montres.csv</button>
+<body>
 
+    <h1>Exporter ou mettre à jour les montres</h1>
+
+    <div class="buttons">
+        <button onclick="downloadCSV()">⬇️ Télécharger montres.csv</button>
+
+        <!-- Bouton stylé déclencheur -->
+        <input type="file" id="csvFile" name="csvFile" accept=".csv">
+        <label for="csvFile" class="upload">📤 Choisir un fichier CSV</label>
+        <button onclick="uploadCSV()">🚀 Remplacer le CSV sur le serveur</button>
+
+        <button onclick="window.location.href='index.html'">🏠 Voir les montres</button>
+        <button onclick="window.location.href='ajouter.html'">Ajouter une montre</button>
+    </div>
+
+    <table id="montreTable">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Prix</th>
+                <th>Description</th>
+                <th>Image</th>
+                <th>🛠️ Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+
+    </table>
+<script src="js/config.js"></script>
     <script>
-        document.getElementById("exportBtn").addEventListener("click", () => {
-            const url = "https://script.google.com/macros/s/AKfycbxKJGDSP8_bUQ-yV7MX8L8gPH7JtMU7fcfQq2b1800de_Dj8AL-bM3HStOhuFHc5oIDJg/exec";
+        let montres = [];
 
-            fetch(url)
-                .then(res => res.json())
-                .then(data => {
-                    const rows = data.map(row => ({
-                        id: row.id,
-                        nom: row.nom,
-                        prix: row.prix,
-                        description: row.description,
-                        image1: row.image1,
-                        image2: row.image2,
-                        image3: row.image3,
-                        image4: row.image4
-                    }));
+        async function fetchData() {
+            try {
+                const res = await fetch(GOOGLE_API_URL);
+                montres = await res.json();
+                displayTable();
+            } catch (e) {
+                alert("Erreur de chargement : " + e);
+            }
+        }
 
-                    // Générer CSV
-                    const headers = Object.keys(rows[0]);
-                    const csv = [
-                        headers.join(","),
-                        ...rows.map(r =>
-                            headers.map(h => {
-                                const value = r[h];
-                                const str = typeof value === 'string'
-                                    ? value
-                                    : typeof value === 'number'
-                                        ? value.toString()
-                                        : JSON.stringify(value);
-                                return `"${str.replace(/"/g, '""')}"`;
-                            }).join(",")
-                        )
-                    ].join("\n");
+        function displayTable() {
+            const tbody = document.querySelector("#montreTable tbody");
+            tbody.innerHTML = "";
+            montres.forEach((m, index) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+      <td>${m.nom}</td>
+      <td>${m.prix} €</td>
+      <td>${m.description}</td>
+      <td><img src="${m.image2}" alt="${m.nom}"></td>
+      <td><button onclick="deleteMontre(${index})">🗑️</button></td>
+    `;
+                tbody.appendChild(tr);
+            });
+        }
 
+        function deleteMontre(index) {
+            if (!confirm("Supprimer cette montre ?")) return;
 
-                    // Télécharger
-                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-                    const urlBlob = URL.createObjectURL(blob);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", urlBlob);
-                    link.setAttribute("download", "montres.csv");
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
+            fetch(GOOGLE_API_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "delete",
+                    id: index
                 })
-                .catch(err => alert("Erreur de récupération : " + err));
-        });
+            })
+                .then(res => res.text())
+                .then(msg => {
+                    alert("⛔️ Montre supprimée : " + msg);
+                    fetchData(); // recharge
+                })
+                .catch(err => {
+                    alert("Erreur : " + err);
+                });
+        }
+
+        function downloadCSV() {
+            const headers = ["id", "nom", "prix", "description", "image1", "image2", "image3", "image4", "images"];
+            const rows = montres.map(r =>
+                headers.map(h => {
+                    const value = r[h];
+                    const str = typeof value === 'string'
+                        ? value
+                        : typeof value === 'number'
+                            ? value.toString()
+                            : JSON.stringify(value);
+                    return `"${str.replace(/"/g, '""')}"`;
+                }).join(",")
+            );
+            const csvContent = [headers.join(","), ...rows].join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "montres.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function uploadCSV() {
+            const fileInput = document.getElementById("csvFile");
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Veuillez d'abord choisir un fichier CSV !");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("csvFile", file);
+
+            fetch("upload.php", {
+                method: "POST",
+                body: formData
+            })
+                .then(res => res.text())
+                .then(msg => {
+                    alert(msg);
+                    fileInput.value = "";
+                    fetchData();
+                })
+                .catch(err => {
+                    alert("Erreur lors de l'envoi : " + err);
+                });
+        }
+
+        window.onload = fetchData;
     </script>
 </body>
 
