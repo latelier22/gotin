@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Exporter les montres en CSV</title>
+</head>
+
+<body style="font-family:sans-serif; background:#111; color:#D4AF37; text-align:center; padding:30px">
+    <h1>Exporter les données des montres</h1>
+    <button id="exportBtn" style="font-size:1.5em; padding:10px 20px;">📥 Télécharger montres.csv</button>
+
+    <script>
+        document.getElementById("exportBtn").addEventListener("click", () => {
+            const url = "https://script.google.com/macros/s/AKfycbxKJGDSP8_bUQ-yV7MX8L8gPH7JtMU7fcfQq2b1800de_Dj8AL-bM3HStOhuFHc5oIDJg/exec";
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    const rows = data.map(row => ({
+                        id: row.id,
+                        nom: row.nom,
+                        prix: row.prix,
+                        description: row.description,
+                        image1: row.image1,
+                        image2: row.image2,
+                        image3: row.image3,
+                        image4: row.image4
+                    }));
+
+                    // Générer CSV
+                    const headers = Object.keys(rows[0]);
+                    const csv = [
+                        headers.join(","),
+                        ...rows.map(r =>
+                            headers.map(h => {
+                                const value = r[h];
+                                const str = typeof value === 'string'
+                                    ? value
+                                    : typeof value === 'number'
+                                        ? value.toString()
+                                        : JSON.stringify(value);
+                                return `"${str.replace(/"/g, '""')}"`;
+                            }).join(",")
+                        )
+                    ].join("\n");
+
+
+                    // Télécharger
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                    const urlBlob = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", urlBlob);
+                    link.setAttribute("download", "montres.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                })
+                .catch(err => alert("Erreur de récupération : " + err));
+        });
+    </script>
+</body>
+
+</html>
