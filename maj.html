@@ -68,12 +68,9 @@
     <h1>Exporter ou mettre à jour les montres</h1>
 
     <div class="buttons">
-        <button onclick="downloadCSV()">⬇️ Télécharger montres.csv</button>
+        <button onclick="downloadCSV()">⬇️ Télécharge rmontres de GoogleSheet</button>
 
-        <!-- Bouton stylé déclencheur -->
-        <input type="file" id="csvFile" name="csvFile" accept=".csv">
-        <label for="csvFile" class="upload">📤 Choisir un fichier CSV</label>
-        <button onclick="uploadCSV()">🚀 Remplacer le CSV sur le serveur</button>
+        <button onclick="replaceCSVFromData()">📤 Exporter Montres Google vers vers le serveur</button>
 
         <button onclick="window.location.href='index.html'">🏠 Voir les montres</button>
         <button onclick="window.location.href='ajouter.html'">Ajouter une montre</button>
@@ -311,6 +308,38 @@
                     alert("Erreur modification : " + err);
                 });
         });
+
+
+        function replaceCSVFromData() {
+  const headers = ["id", "nom", "prix", "description", "image1", "image2", "image3", "image4", "images"];
+  const rows = montres.map((m, i) =>
+    headers.map(h => {
+      const value = h === "id" ? i : (m[h] || "");
+      const str = typeof value === 'string'
+        ? value
+        : typeof value === 'number'
+        ? value.toString()
+        : JSON.stringify(value);
+      return `"${str.replace(/"/g, '""')}"`;
+    }).join(",")
+  );
+  const csvContent = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const formData = new FormData();
+  formData.append("csvFile", blob, "montres.csv");
+
+  fetch("upload.php", {
+    method: "POST",
+    body: formData
+  })
+    .then(res => res.text())
+    .then(msg => {
+      alert("✅ Fichier CSV mis à jour sur le serveur :\n" + msg);
+    })
+    .catch(err => {
+      alert("❌ Erreur lors de l'envoi : " + err);
+    });
+}
 
     </script>
 </body>
