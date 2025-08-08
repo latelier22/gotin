@@ -115,6 +115,7 @@
   <table>
     <thead>
       <tr>
+        <th>Reference</th>
         <th>Nom</th>
         <th>Prix</th>
         <th>Description</th>
@@ -144,6 +145,7 @@
       style="background:#222; padding:20px; color:white; max-width:500px; width:90%; border-radius:10px;"
       enctype="multipart/form-data">
       <input type="hidden" name="id">
+      <label>Reference : <input type="text" name="reference" required></label><br>
       <label>Nom : <input type="text" name="nom" required></label><br>
       <label>Prix : <input type="number" name="prix" required></label><br>
       <label>Description : <textarea name="description" rows="3" required></textarea></label><br>
@@ -199,6 +201,7 @@
       filtered.forEach((m, index) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
+        <td>${m.reference}</td>
       <td>${m.nom}</td>
       <td>${m.prix} €</td>
       <td>${m.description}</td>
@@ -253,6 +256,7 @@
       const m = montres[index];
       const form = document.getElementById("formMontre");
       form.id.value = m.id;
+      form.reference.value = m.reference; // <-- AJOUT ICI
       form.nom.value = m.nom;
       form.prix.value = m.prix;
       form.description.value = m.description;
