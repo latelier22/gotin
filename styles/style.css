@@ -7,10 +7,9 @@ body {
 
 /* Container */
 .container {
-  max-width: 800px;
-  margin: auto;
+  width: 100%;
   padding: 10px;
-  position: relative;
+  box-sizing: border-box;
 }
 
 /* Navigation */
@@ -38,13 +37,7 @@ body {
 }
 
 /* Affichage montre */
-.montre {
-  display: none;
-}
 
-.montre.active {
-  display: block;
-}
 
 .main-display {
   position: relative;
@@ -103,6 +96,7 @@ body {
 .gallery {
   display: flex;
   margin-top: 15px;
+  margin-bottom: 30px;
   gap: 10px;
 }
 
@@ -248,4 +242,136 @@ body {
 .filters button:hover {
   background-color: #e0be00;
 }
+.montre {
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+}
 
+.montre.active {
+  opacity: 1;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+#montres-container {
+  position: relative;
+  min-height: 500px; /* très important */
+  margin-bottom: 100px;
+}
+
+/* --- Nouveau layout 3 colonnes --- */
+.main-layout {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.left-panel, .right-panel {
+  width: 180px;
+}
+
+.center-panel {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 30px;
+}
+
+
+/* Colonne gauche : Filtres */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #111;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #333;
+}
+
+.filters h2 {
+  text-align: center;
+  font-size: 1.3em;
+  color: #FFD700;
+  margin-bottom: 10px;
+}
+
+/* Colonne droite : Miniatures */
+.right-panel {
+  background: #111;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  height: fit-content;
+}
+
+.right-panel h2 {
+  text-align: center;
+  font-size: 1.3em;
+  color: #FFD700;
+  margin-bottom: 10px;
+}
+.left-panel h2 {
+  text-align: center;
+  font-size: 1.3em;
+  color: #FFD700;
+  margin-bottom: 10px;
+}
+
+.thumbnail-strip {
+  flex-direction: column;
+  gap: 10px;
+  display: flex;
+  max-height: 600px;
+  overflow-y: auto;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .center-panel {
+    width: 100%;
+  }
+
+  .thumbnail-strip {
+    justify-content: center;
+    flex-wrap: wrap;
+    flex-direction: row;
+  }
+
+  .navigation {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .navigation button {
+    width: 100%;
+    max-width: 200px;
+  }
+  .filters{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  #montres-container {
+  
+  margin-bottom: 100px;
+}
+}

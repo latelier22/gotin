@@ -81,6 +81,8 @@ if (USE_LOCAL_DATA) {
  
 function renderMontres() {
   const container = document.getElementById("montres-container");
+  container.style.position = "relative";
+
   const thumbs = document.getElementById("thumbnail-strip");
   container.innerHTML = '';
   thumbs.innerHTML = '';
@@ -124,5 +126,14 @@ function filterMontres(categorie) {
   currentFilter = categorie;
   renderMontres();
 }
+
+// Animation automatique : changement de montre toutes les 2 secondes
+let autoChange = true;
+
+setInterval(() => {
+  if (autoChange && montres.length > 1) {
+    changeMontre(1);
+  }
+}, 4000); // 4000 ms = 4 secondes
 
 
