@@ -1,7 +1,7 @@
 <?php
 // config
 define('DB_FILE', __DIR__ . '/data/montres.sqlite');
-define('GOOGLE_API_URL', 'https://script.google.com/macros/s/AKfycbyV4e_XcOJKYhE9rMoJ9wQBgT0u-dYEI4OU5qL5Ula868HNfLgmiJEd2gFpJOw9V8wiAg/exec'); // à adapter
+define('GOOGLE_API_URL', 'https://script.google.com/macros/s/AKfycbwLLsPWmWlMOA4XUGx6AemxHzeV8m9F6zBaanJ9oFUtqsLJPFvbivEIkcIpfvaL37F0UQ/exec'); // à adapter
 
 // fetch depuis Google API
 $json = file_get_contents(GOOGLE_API_URL);
@@ -51,4 +51,7 @@ foreach ($data as $m) {
     $imported++;
 }
 
-echo "✅ $imported montres importées depuis Google Sheets dans la base SQLite.";
+// echo "✅ $imported montres importées depuis Google Sheets dans la base SQLite.";
+
+header("Location: crud.html");
+exit;
