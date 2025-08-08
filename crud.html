@@ -93,13 +93,16 @@
     <button
       onclick="window.open('https://docs.google.com/spreadsheets/d/1RImwBSEucX0d6chHduucER-GVvM_nzlSFmvAjlQnScg/edit?usp=sharing', '_blank')">GoogleSheet</button>
 
-    <button onclick="window.location.href='import.php'">⬅️ Importer de GoogleSheet</button>
+    <!-- <button onclick="window.location.href='import.php'">⬅️ Importer de GoogleSheet</button>
     <button onclick="envoyerVersGoogle()">➡️ Exporter vers GoogleSheet</button>
-    <button onclick="downloadCSV()">⬇️ Télécharge CSV GoogleSheet</button>
+    <button onclick="downloadCSV()">⬇️ Télécharge CSV GoogleSheet</button> -->
     <button onclick="downloadZip()">Télécharger ZIP</button>
-    <button onclick="replaceCSVFromData()">📤 Exporter Google vers serveur</button>
-    <button onclick="window.location.href='index.html'">🏠 Voir les montres</button>
-    <button onclick="openAddModal()">➕ Ajouter une montre</button>
+    <!-- <button onclick="replaceCSVFromData()">📤 Exporter Google vers serveur</button> -->
+    <button onclick="window.location.href='index.html'">🏠 Voir les produits</button>
+    <button onclick="openAddModal()">➕ Ajouter un produit</button>
+    <button onclick="downloadProduitsCSV()">📄 Créer produits.csv</button>
+    <button onclick="sendSQLiteDataToServer()">📤 Envoyer données vers serveur</button>
+    <button onclick="window.location.href='creerZip.php'">📄 Créer Zip pour tablette</button>
 
   </div>
   <div>
@@ -122,6 +125,8 @@
         <th>Images</th>
         <th>Actions</th>
         <th>Catégorie</th>
+        <th>État</th>
+        <th>Status</th>ƒ
       </tr>
     </thead>
     <tbody id="montreTable"></tbody>
@@ -159,9 +164,19 @@
           <option>Chaussures</option>
           <option>Autres</option>
         </select>
-      </label><br>
-      <button type="submit">💾 Enregistrer</button>
-      <button type="button" onclick="closeModalForm()">❌ Annuler</button>
+
+        <label>Etat : <input type="text" name="etat" value="Neuf" required></label><br>
+
+
+        <label>Status :
+          <select name="status">
+            <option value="disponible">Disponible</option>
+            <option value="achat en cours">Achat en cours</option>
+            <option value="vendu">Vendu</option>
+          </select>
+        </label><br>
+        <button type="submit">💾 Enregistrer</button>
+        <button type="button" onclick="closeModalForm()">❌ Annuler</button>
     </form>
   </div>
 
@@ -170,6 +185,8 @@
   </div>
 
   <script src="js/config.js"></script>
+
+  <script src="js/sqliteVersCsv.js"></script>
   <script>
     let currentCategory = "All";
 
@@ -216,7 +233,9 @@
         <button onclick="openEditModal(${index})">📝</button>
         <button onclick="deleteMontre(${m.id})">🗑️</button>
       </td>
-      <td>${m.categorie}</td>`;
+      <td>${m.categorie}</td>
+      <td>${m.etat}</td>
+      <td>${m.status}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -261,6 +280,9 @@
       form.prix.value = m.prix;
       form.description.value = m.description;
       form.categorie.value = m.categorie; // <-- AJOUT ICI
+      form.etat.value = m.etat;
+      form.status.value = m.status;
+
       document.getElementById("formModal").style.display = "flex";
     }
 
@@ -305,6 +327,9 @@
       dataForm.append("image2", imagePaths[1]);
       dataForm.append("image3", imagePaths[2]);
       dataForm.append("image4", imagePaths[3]);
+      dataForm.append("etat", form.etat.value);
+      dataForm.append("status", form.status.value);
+
       dataForm.append("action", editing ? "edit" : "add");
 
       showSpinner();
@@ -447,6 +472,51 @@
         });
     }
 
+  function sendSQLiteDataToServer() {
+    if (montres.length === 0) {
+      alert("Aucune donnée à envoyer !");
+      return;
+    }
+
+    const headers = [
+      "id", "reference", "nom", "prix", "description",
+      "image1", "image2", "image3", "image4",
+      "categorie", "etat", "status"
+    ];
+
+    const rows = montres.map((m, i) =>
+      headers.map(h => {
+        const value = h === "id" ? i : (m[h] || "");
+        const str = typeof value === 'string'
+          ? value
+          : typeof value === 'number'
+            ? value.toString()
+            : JSON.stringify(value);
+        return `"${str.replace(/"/g, '""')}"`;
+      }).join(",")
+    );
+
+    const csvContent = [headers.join(","), ...rows].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const formData = new FormData();
+    formData.append("csvFile", blob, "montres.csv");
+
+    showSpinner();
+    fetch("upload.php", {
+      method: "POST",
+      body: formData
+    })
+      .then(res => res.text())
+      .then(msg => {
+        hideSpinner();
+        alert("✅ CSV mis à jour sur le serveur :\n" + msg);
+      })
+      .catch(err => {
+        hideSpinner();
+        alert("❌ Erreur lors de l'envoi : " + err.message);
+      });
+  }
 
   </script>
 

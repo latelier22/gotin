@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Les Montres de Gotin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css">
+  <script src="js/data.js"></script>
+  <script src="js/script.js" defer></script>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align:center; font-size:2.5em; margin-bottom:30px; color:#FFD700; letter-spacing:2px; text-shadow:1px 1px 8px #000;">Les Montres de Gotin</h1>
+    <div class="container">
+      <div id="montres-container"></div>
+      <div class="thumbnail-strip" id="thumbnail-strip"></div>
+      <div class="navigation">
+          <button onclick="changeMontre(-1)">⟵ Précédente</button>
+          <button onclick="changeMontre(1)">Suivante ⟶</button>
+      </div>
+    </div>
+
+    <div class="modal" id="imageModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">✖</span>
+        <span class="prev" onclick="prevImage()">◀</span>
+        <img id="modalImage" src="">
+        <span class="next" onclick="nextImage()">▶</span>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>Pour tout renseignement : <a href="mailto:robic@gmail.com">robic@gmail.com</a> — <a href="tel:+33326156546">+33 3 26 15 65 46</a></p>
+    </footer>
+  </div>
+</body>
+</html>

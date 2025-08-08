@@ -1,5 +1,5 @@
 
-const USE_LOCAL_DATA = false; // mettre false pour utiliser le CSV
+const USE_LOCAL_DATA = true; // mettre false pour utiliser le CSV
 
 if (!USE_LOCAL_DATA) {
   let montres = [];
@@ -7,9 +7,6 @@ if (!USE_LOCAL_DATA) {
   }
 let currentMontreIndex = 0;
 let currentImageIndex = 0;
-
-let currentFilter = 'all';
-
 
 function showMontre(index) {
   document.querySelector(`#montre-${currentMontreIndex}`)?.classList.remove('active');
@@ -59,19 +56,14 @@ if (USE_LOCAL_DATA) {
       const data = Papa.parse(csvText, { header: true }).data;
 
       montres = data
-  .filter(row => row.image1 && row.image2 && row.image3 && row.image4)
-  .map((row, index) => ({
-    id: index,
-    nom: row.nom,
-    prix: row.prix,
-    description: row.description,
-    reference: row.reference || '',
-    etat: row.etat || '',
-    status: row.status || '',
-    categorie: row.categorie || '',
-    images: [row.image1, row.image2, row.image3, row.image4]
-  }));
-
+        .filter(row => row.image1 && row.image2 && row.image3 && row.image4)
+        .map((row, index) => ({
+          id: index,
+          nom: row.nom,
+          prix: row.prix,
+          description: row.description,
+          images: [row.image1, row.image2, row.image3, row.image4]
+        }));
 
       renderMontres();
     });
@@ -82,26 +74,19 @@ if (USE_LOCAL_DATA) {
 function renderMontres() {
   const container = document.getElementById("montres-container");
   const thumbs = document.getElementById("thumbnail-strip");
-  container.innerHTML = '';
-  thumbs.innerHTML = '';
 
-  montres
-  .filter(montre => currentFilter === 'all' || montre.categorie === currentFilter)
-  .forEach((montre, index) => {
+  montres.forEach((montre, index) => {
     // Affichage principal
     const div = document.createElement("div");
     div.className = "montre" + (index === 0 ? " active" : "");
     div.id = `montre-${index}`;
     div.innerHTML = `
       <div class="main-display" style="background-image: url('${montre.images[1]}');" onclick="openModal(${index}, 1)">
-       <div class="info">
-      <h1>${montre.nom}</h1>
-      <p><strong>Référence :</strong> ${montre.reference || '—'}</p>
-      <p><strong>Prix :</strong> ${montre.prix} €</p>
-      <p><strong>Description :</strong> ${montre.description}</p>
-      <p><strong>État :</strong> ${montre.etat || '—'}</p>
-      <p><strong>Status :</strong> ${montre.status || '—'}</p>
-    </div>
+        <div class="info">
+          <h1>${montre.nom}</h1>
+          <p>Prix : ${montre.prix} €</p>
+          <p>${montre.description}</p>
+        </div>
       </div>
       <div class="gallery">
         <img src="${montre.images[0]}" onclick="openModal(${index}, 0)">
@@ -119,10 +104,4 @@ function renderMontres() {
     thumbs.appendChild(thumb);
   });
 }
-
-function filterMontres(categorie) {
-  currentFilter = categorie;
-  renderMontres();
-}
-
 

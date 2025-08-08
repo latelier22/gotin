@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Les Montres de Gotin</title>
+  <style>
+    /* CSS identique à celui généré dans le script précédent (très complet) */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align:center; font-size:2.5em; margin-bottom:30px; color:#FFD700;">Les Montres de Gotin</h1>
+    <div id="montres-container"></div>
+    <div class="thumbnail-strip" id="thumbnail-strip"></div>
+    <div class="navigation">
+      <button onclick="changeMontre(-1)">⟵ Précédente</button>
+      <button onclick="changeMontre(1)">Suivante ⟶</button>
+    </div>
+  </div>
+
+  <div class="modal" id="imageModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">✖</span>
+      <span class="prev" onclick="prevImage()">◀</span>
+      <img id="modalImage" src="">
+      <span class="next" onclick="nextImage()">▶</span>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>Pour tout renseignement : <a href="mailto:robic@gmail.com">robic@gmail.com</a> — <a href="tel:+33326156546">+33 3 26 15 65 46</a></p>
+  </footer>
+
+  <script>
+    let montres = __MONTRES_JSON__;
+    let currentMontreIndex = 0;
+    let currentImageIndex = 0;
+
+    function showMontre(index) {
+      document.querySelector(`#montre-${currentMontreIndex}`)?.classList.remove('active');
+      currentMontreIndex = index;
+      document.querySelector(`#montre-${currentMontreIndex}`)?.classList.add('active');
+    }
+
+    function changeMontre(direction) {
+      let newIndex = (currentMontreIndex + direction + montres.length) % montres.length;
+      showMontre(newIndex);
+    }
+
+    function openModal(montreIndex, imageIndex) {
+      currentMontreIndex = montreIndex;
+      currentImageIndex = imageIndex;
+      document.getElementById("modalImage").src = 'images/' + montres[montreIndex].images[imageIndex];
+      document.getElementById("imageModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("imageModal").style.display = "none";
+    }
+
+    function nextImage() {
+      currentImageIndex = (currentImageIndex + 1) % 4;
+      document.getElementById("modalImage").src = 'images/' + montres[currentMontreIndex].images[currentImageIndex];
+    }
+
+    function prevImage() {
+      currentImageIndex = (currentImageIndex - 1 + 4) % 4;
+      document.getElementById("modalImage").src = 'images/' + montres[currentMontreIndex].images[currentImageIndex];
+    }
+
+    function renderMontres() {
+      const container = document.getElementById("montres-container");
+      const thumbs = document.getElementById("thumbnail-strip");
+
+      montres.forEach((montre, index) => {
+        const div = document.createElement("div");
+        div.className = "montre" + (index === 0 ? " active" : "");
+        div.id = `montre-${index}`;
+        div.innerHTML = `
+          <div class="main-display" style="background-image: url('images/${montre.images[1]}');" onclick="openModal(${index}, 1)">
+            <div class="info">
+              <h1>${montre.nom}</h1>
+              <p>Prix : ${montre.prix} €</p>
+              <p>${montre.description}</p>
+            </div>
+          </div>
+          <div class="gallery">
+            <img src="images/${montre.images[0]}" onclick="openModal(${index}, 0)">
+            <img src="images/${montre.images[2]}" onclick="openModal(${index}, 2)">
+            <img src="images/${montre.images[3]}" onclick="openModal(${index}, 3)">
+          </div>
+        `;
+        container.appendChild(div);
+
+        const thumb = document.createElement("div");
+        thumb.className = "thumbnail";
+        thumb.innerHTML = `<img src="images/${montre.images[1]}" alt="${montre.nom}">`;
+        thumb.onclick = () => showMontre(index);
+        thumbs.appendChild(thumb);
+      });
+    }
+
+    renderMontres();
+  </script>
+</body>
+</html>

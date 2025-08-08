@@ -17,16 +17,22 @@
     <!-- Montre 1 -->
    <div class="container">
   
+<div id="filters" class="filters">
+  <button onclick="filterMontres('all')">Tous les produits</button>
+  <button onclick="filterMontres('Montres')">Montres</button>
+  <button onclick="filterMontres('Chaussures')">Chaussures</button>
+  <button onclick="filterMontres('Autres')">Autres</button>
+</div>
 
   <div id="montres-container"></div>
 
-  <div class="thumbnail-strip" id="thumbnail-strip"></div>
+  
 
 <div class="navigation">
     <button onclick="changeMontre(-1)">⟵ Précédente</button>
     <button onclick="changeMontre(1)">Suivante ⟶</button>
   </div>
-
+<div class="thumbnail-strip" id="thumbnail-strip"></div>
 </div>
 
 

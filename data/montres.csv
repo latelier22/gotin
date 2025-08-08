@@ -1,5 +1,8 @@
-id,nom,prix,description,image1,image2,image3,image4
-"0","Montre Zenith Elite","8500","Titane, automatique, cuir italien","images/montre1-1.avif","images/montre1-2.avif","images/montre1-3.avif","images/montre1-4.avif"
-"1","Rolex Submariner","12000","Acier, lunette céramique, étanche 300 m","images/montre2-1.avif","images/montre2-2.avif","images/montre2-3.avif","images/montre2-4.avif"
-"2","Breitling Superocean!","6000","Heritage B20 Automatic 42","images/montre3-1.avif","images/montre3-2.avif","images/montre3-3.avif","images/montre3-4.avif"
-"3","vbnvbn","120","cvbcv","images/montre3-2.avif","images/montre2-3.avif","images/montre1-2.avif","images/montre3-2.avif"
+id,reference,nom,prix,description,image1,image2,image3,image4,categorie,etat,status
+"0","ZEN01","Montre Zenith Elite","8500","Titane, automatique, cuir italien","images/montre1-1.avif","images/montre1-2.avif","images/montre1-3.avif","images/montre1-4.avif","Montres","Neuf","disponible"
+"1","","Rolex Submariner","12000","Acier, lunette céramique, étanche 300 m","images/montre2-1.avif","images/montre2-2.avif","images/montre2-3.avif","images/montre2-4.avif","Montres","Neuf","Disponible"
+"2","fgdfg","Breitling Superocean!","6000","Heritage B20 Automatic 42","images/montre3-1.avif","images/montre3-2.avif","images/montre3-3.avif","images/montre3-4.avif","Montres","Neuf","achat en cours"
+"3","CHAU03","Richelieu en alligator brun foncé pour homme","7000","La beauté du design et l’équilibre des formes définissent le style de ce richelieu Santoni. Un modèle impeccable pour les occasions les plus habillées, confectionné à la main par nos maîtres-artisans dans un magnifique cuir d’alligator. Il se caractérise par une silhouette sophistiquée et essentielle avec une seule couture sur le contrefort.
+
+
+","images/CHAU03-under.webp","images/CHAU03-full.webp","images/CHAU03-top.webp","images/CHAU03-full.webp","Chaussures","Neuf","disponible"
