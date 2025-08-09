@@ -1,21 +1,30 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
+  <title>Montres + Scène 3D (switch 20s)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Les Montres de Gotin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <script src="js/script.js" defer></script>
-</head>
 
+  <!-- Ton CSS existant -->
+  <link rel="stylesheet" href="styles/style.css">
+
+  <!-- Librairies nécessaires -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+  <style>
+    /* petites sécurités au cas où */
+    #scene-container { width: 100%; height: 520px; }
+    .center-panel { position: relative; }
+  </style>
+</head>
 <body>
+
   <div class="container">
     <h1>Les Montres de Gotin</h1>
+
     <div class="main-layout">
-      <!-- COLONNE GAUCHE : Filtres -->
+      <!-- Colonne GAUCHE : Filtres -->
       <div class="left-panel">
         <h2>Catégories</h2>
         <div id="filters" class="filters">
@@ -26,23 +35,31 @@
         </div>
       </div>
 
-      <!-- COLONNE CENTRALE : Produit -->
+      <!-- Colonne CENTRALE : on bascule entre produits et scène 3D -->
       <div class="center-panel">
-        <div id="montres-container"></div>
-        <div class="navigation">
-          <button onclick="changeMontre(-1)">⟵ Précédente</button>
-          <button onclick="changeMontre(1)">Suivante ⟶</button>
+        <!-- PRODUITS -->
+        <div id="products-wrapper">
+          <div id="montres-container"></div>
+          <div class="navigation">
+            <button onclick="changeMontre(-1)">⟵ Précédente</button>
+            <button onclick="changeMontre(1)">Suivante ⟶</button>
+          </div>
+        </div>
+
+        <!-- SCÈNE 3D -->
+        <div id="scene-wrapper" style="display:none;">
+          <div id="scene-container"></div>
         </div>
       </div>
 
-      <!-- COLONNE DROITE : Miniatures -->
+      <!-- Colonne DROITE : Miniatures -->
       <div class="right-panel">
         <h2>Les autres<br>produits</h2>
         <div class="thumbnail-strip" id="thumbnail-strip"></div>
       </div>
     </div>
 
-    <!-- Modale -->
+    <!-- Modale images produits -->
     <div class="modal" id="imageModal">
       <div class="modal-content">
         <span class="close" onclick="closeModal()">✖</span>
@@ -52,7 +69,6 @@
       </div>
     </div>
 
-    <!-- Pied de page -->
     <footer class="footer">
       <p>
         Pour tout renseignement :
@@ -61,5 +77,404 @@
       </p>
     </footer>
   </div>
+
+  <!-- ================= PRODUITS (ton JS “montres”) ================= -->
+  <script>
+    // ——— Simplifié pour l’exemple : adapte avec ton script.js si besoin ———
+    let montres = [];
+    let currentMontreIndex = 0;
+    let currentImageIndex = 0;
+    let currentFilter = 'all';
+
+    // charge CSV
+    fetch('data/montres.csv')
+      .then(r => r.text())
+      .then(t => {
+        const data = Papa.parse(t, { header: true }).data;
+        montres = data.map((row, i) => ({
+          id: i,
+          nom: row.nom || '',
+          prix: row.prix || '',
+          promotion: row.promotion || '',
+          description: row.description || '',
+          reference: row.reference || '',
+          etat: row.etat || '',
+          status: row.status || '',
+          categorie: row.categorie || '',
+          images: [row.image1, row.image2, row.image3, row.image4].filter(Boolean)
+        }));
+        renderMontres();
+      });
+
+    function renderMontres() {
+      const container = document.getElementById('montres-container');
+      const thumbs = document.getElementById('thumbnail-strip');
+      container.innerHTML = '';
+      thumbs.innerHTML = '';
+
+      const filtered = montres.filter(m => currentFilter === 'all' || m.categorie === currentFilter);
+      if (!filtered.length) return;
+
+      filtered.forEach((m, index) => {
+        const imgs = m.images.length ? m.images : ['images/placeholder.jpg'];
+        const mainIdx = imgs[1] ? 1 : 0;
+
+        const div = document.createElement('div');
+        div.className = 'montre' + (index === 0 ? ' active' : '');
+        div.id = `montre-${index}`;
+        div.style.position = 'absolute';
+        div.style.inset = '0';
+        div.style.opacity = index === 0 ? '1' : '0';
+        div.innerHTML = `
+          <div class="main-display" style="background-image:url('${imgs[mainIdx]}')" onclick="openModal(${index}, ${mainIdx})">
+            <div class="info">
+              <h1>${m.nom || '—'}</h1>
+              <p><strong>Référence :</strong> ${m.reference || '—'}</p>
+              <p><strong>Prix :</strong> ${priceHTML(m)}</p>
+              <p><strong>Description :</strong> ${m.description || '—'}</p>
+              <p><strong>État :</strong> ${m.etat || '—'}</p>
+              <p><strong>Status :</strong> ${m.status || '—'}</p>
+            </div>
+          </div>
+          <div class="gallery">
+            ${imgs.map((src,i)=> i===mainIdx ? '' : `<img src="${src}" onclick="openModal(${index}, ${i})">`).join('')}
+          </div>`;
+        container.appendChild(div);
+
+        const th = document.createElement('div');
+        th.className = 'thumbnail';
+        th.innerHTML = `<img src="${imgs[mainIdx]}" alt="${m.nom}">`;
+        th.onclick = () => showMontre(index);
+        thumbs.appendChild(th);
+      });
+    }
+
+    function priceHTML(m) {
+      const p = Number(m.prix), promo = Number(m.promotion);
+      if (Number.isFinite(promo) && promo > 0 && Number.isFinite(p)) {
+        return `<span class="price-line"><span class="price-old">${p} €</span><span class="price-new">${promo} €</span></span>`;
+      }
+      return m.prix ? `<span class="price-line">${m.prix} €</span>` : '';
+    }
+    function showMontre(index) {
+      document.querySelector(`#montre-${currentMontreIndex}`)?.classList.remove('active');
+      currentMontreIndex = index;
+      document.querySelectorAll('#montres-container .montre').forEach((el,i)=>{
+        el.style.opacity = i === index ? '1' : '0';
+        el.style.zIndex = i === index ? '1' : '0';
+      });
+    }
+    function changeMontre(dir) {
+      const list = [...document.querySelectorAll('#montres-container .montre')];
+      if (!list.length) return;
+      const newIndex = (currentMontreIndex + dir + list.length) % list.length;
+      showMontre(newIndex);
+    }
+    function filterMontres(cat) { currentFilter = cat; renderMontres(); }
+
+    // Modale produits
+    function openModal(mIndex, imgIndex) {
+      currentMontreIndex = mIndex;
+      currentImageIndex = imgIndex;
+      const imgs = montres[mIndex].images.length ? montres[mIndex].images : ['images/placeholder.jpg'];
+      document.getElementById('modalImage').src = imgs[imgIndex];
+      document.getElementById('imageModal').style.display = 'flex';
+    }
+    function closeModal(){ document.getElementById('imageModal').style.display='none'; }
+    function nextImage(){
+      const imgs = montres[currentMontreIndex].images.length ? montres[currentMontreIndex].images : ['images/placeholder.jpg'];
+      currentImageIndex = (currentImageIndex + 1) % imgs.length;
+      document.getElementById('modalImage').src = imgs[currentImageIndex];
+    }
+    function prevImage(){
+      const imgs = montres[currentMontreIndex].images.length ? montres[currentMontreIndex].images : ['images/placeholder.jpg'];
+      currentImageIndex = (currentImageIndex - 1 + imgs.length) % imgs.length;
+      document.getElementById('modalImage').src = imgs[currentImageIndex];
+    }
+  </script>
+
+  <!-- ================= SCÈNE 3D (Three.js + alternance 20s) ================= -->
+  <script>
+    // Expose quelques éléments au scope global pour le switch
+    let __sceneInited = false; // pour init une seule fois
+    let timerId = null;        // cycle des images de la scène
+
+    // ======= Code Three.js (avec rotation locale + oscillation + crossfade 10s) =======
+    (function(){
+      const CONTAINER_ID = 'scene-container';
+      const FACE_COUNT   = 6;
+      const CYCLE_MS     = 10000;
+      const TRANS_MS     = 10000; // = CYCLE_MS => pas de pause
+      const PIVOT_Z      = -2.0;
+      const CUBE_OFFSETZ =  2.2;
+
+      // Anim locales (par seconde)
+      const AUTO_ROT = { x: 0.18, y: 0.24, z: 0.12 };
+      const OSC      = { freq: 0.08, amp: 1.0 };
+
+      let allImages = [];
+      let lastSet = [];
+      let timeStart = performance.now();
+      let lastTime  = performance.now();
+
+      // three objs
+      let scene, camera, renderer, loader, hemi;
+      let pivotA, cubeA, faceMatsA = [];
+      let pivotB, cubeB, faceMatsB = [];
+      let running = false;
+
+      // utils
+      const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a,b)=>a[0]-b[0]).map(a=>a[1]);
+      function sample(pool, k, prev = []) {
+        if (pool.length <= k) return pool.slice(0, k);
+        for (let t=0; t<10; t++) {
+          const s = shuffle(pool).slice(0, k);
+          const same = prev.length === s.length && prev.every(p => s.includes(p));
+          if (!same) return s;
+        }
+        return shuffle(pool).slice(0, k);
+      }
+      const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+      const lerp  = (a,b,t)=>a+(b-a)*t;
+      const easeInOut = t => 0.5*(1 - Math.cos(Math.PI*clamp(t,0,1)));
+
+      function setGroupOpacity(object3D, opacity) {
+        object3D.traverse(o => {
+          if (o.isMesh) {
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            mats.forEach(m => { m.transparent = true; m.opacity = opacity; m.needsUpdate = true; });
+          }
+        });
+      }
+      function setGroupVisible(object3D, visible) {
+        object3D.traverse(o => { o.visible = visible; });
+      }
+
+      function initThree(){
+        const container = document.getElementById(CONTAINER_ID);
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(60, container.clientWidth/container.clientHeight, 0.1, 100);
+        camera.position.set(0, 0.4, 5);
+
+        renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true, powerPreference:'high-performance' });
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.innerHTML = '';
+        container.appendChild(renderer.domElement);
+
+        hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.15);
+        scene.add(hemi);
+
+        loader = new THREE.TextureLoader();
+
+        pivotA = new THREE.Group(); pivotA.position.z = PIVOT_Z; scene.add(pivotA);
+        pivotB = new THREE.Group(); pivotB.position.z = PIVOT_Z; scene.add(pivotB);
+
+        const geom = new THREE.BoxGeometry(2,2,2);
+        faceMatsA = Array.from({length: FACE_COUNT}, () => new THREE.MeshBasicMaterial({ color: 0x888888 }));
+        faceMatsB = Array.from({length: FACE_COUNT}, () => new THREE.MeshBasicMaterial({ color: 0x666666 }));
+
+        cubeA = new THREE.Mesh(geom, faceMatsA);
+        cubeB = new THREE.Mesh(geom, faceMatsB);
+        cubeA.position.z = CUBE_OFFSETZ;
+        cubeB.position.z = CUBE_OFFSETZ;
+        pivotA.add(cubeA);
+        pivotB.add(cubeB);
+
+        pivotA.rotation.y = 0;
+        pivotB.rotation.y = Math.PI;
+        setGroupOpacity(pivotA, 1.0);
+        setGroupOpacity(pivotB, 0.0);
+        setGroupVisible(pivotA, true);
+        setGroupVisible(pivotB, false);
+
+        window.addEventListener('resize', onResize);
+        animate();
+      }
+
+      function onResize(){
+        const c = document.getElementById(CONTAINER_ID);
+        if (!c || !camera || !renderer) return;
+        camera.aspect = c.clientWidth / c.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(c.clientWidth, c.clientHeight);
+      }
+
+      function animate(){
+        requestAnimationFrame(animate);
+
+        const now = performance.now();
+        const dt  = (now - lastTime) / 1000;
+        const t   = (now - timeStart) / 1000;
+        lastTime  = now;
+
+        const oscZ = Math.sin(2 * Math.PI * OSC.freq * t) * OSC.amp;
+
+        if (cubeA) {
+          cubeA.rotation.x += AUTO_ROT.x * dt;
+          cubeA.rotation.y += AUTO_ROT.y * dt;
+          cubeA.rotation.z += AUTO_ROT.z * dt;
+          cubeA.position.z  = CUBE_OFFSETZ + oscZ;
+        }
+        if (cubeB) {
+          cubeB.rotation.x += AUTO_ROT.x * dt;
+          cubeB.rotation.y += AUTO_ROT.y * dt;
+          cubeB.rotation.z += AUTO_ROT.z * dt;
+          cubeB.position.z  = CUBE_OFFSETZ + oscZ;
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      function loadTexture(url){
+        return new Promise(resolve => {
+          loader.load(
+            url,
+            tex => { tex.colorSpace = THREE.SRGBColorSpace; resolve(tex); },
+            undefined,
+            () => resolve(null)
+          );
+        });
+      }
+
+      async function setCubeImages(materials, urls){
+        const six = urls.slice(0, FACE_COUNT);
+        while (six.length < FACE_COUNT) six.push(null);
+
+        const textures = await Promise.all(six.map(u=>u?loadTexture(u):Promise.resolve(null)));
+        for (let i=0;i<FACE_COUNT;i++){
+          const mat = materials[i];
+          if (mat.map) { mat.map.dispose(); mat.map = null; }
+          if (textures[i]) { mat.map = textures[i]; mat.color.set(0xffffff); }
+          else { mat.color.set(0x777777); }
+          mat.needsUpdate = true;
+        }
+      }
+
+      async function transitionToNext(){
+        if (running) return;
+        running = true;
+
+        const nextSet = sample(allImages, FACE_COUNT, lastSet);
+        await setCubeImages(faceMatsB, nextSet);
+
+        pivotA.rotation.y = 0;
+        pivotB.rotation.y = Math.PI;
+        setGroupOpacity(pivotA, 1.0);
+        setGroupOpacity(pivotB, 0.0);
+        setGroupVisible(pivotA, true);
+        setGroupVisible(pivotB, true);
+
+        const t0 = performance.now();
+        const step = (now) => {
+          const t = clamp((now - t0) / TRANS_MS, 0, 1);
+          const e = easeInOut(t);
+
+          pivotA.rotation.y = lerp(0, Math.PI, e);
+          pivotB.rotation.y = lerp(Math.PI, 2*Math.PI, e);
+
+          setGroupOpacity(pivotA, 1 - e);
+          setGroupOpacity(pivotB, e);
+
+          renderer.render(scene, camera);
+
+          if (t < 1) requestAnimationFrame(step);
+          else {
+            [pivotA, pivotB]       = [pivotB, pivotA];
+            [cubeA, cubeB]         = [cubeB, cubeA];
+            [faceMatsA, faceMatsB] = [faceMatsB, faceMatsA];
+            lastSet = nextSet.slice(0);
+
+            setGroupOpacity(pivotA, 1.0);
+            setGroupOpacity(pivotB, 0.0);
+            setGroupVisible(pivotA, true);
+            setGroupVisible(pivotB, false);
+            running = false;
+          }
+        };
+        requestAnimationFrame(step);
+      }
+
+      function startCycle(){
+        if (timerId) clearInterval(timerId);
+        timerId = setInterval(transitionToNext, CYCLE_MS);
+      }
+
+      // ——— expose au global pour le switch ———
+      window.initThree  = function(){ if (!__sceneInited){ initThree(); __sceneInited = true; } };
+      window.startCycle = startCycle;
+      window.onResize   = onResize;
+
+      // Préchargement liste d'images
+      (async function preload(){
+        try {
+          const res = await fetch('get-images.php', { cache:'no-store' });
+          const j = await res.json();
+          allImages = Array.isArray(j.files) ? j.files : [];
+          if (!allImages.length) return;
+
+          // quand on initiera la scène, on pose le premier set :
+          window.__threeFirstSet = async function(){
+            const first = sample(allImages, FACE_COUNT);
+            await setCubeImages(faceMatsA, first);
+            lastSet = first.slice(0);
+          };
+        } catch(e){ console.error(e); }
+      })();
+    })();
+
+    // ======= Switch centre : produits <-> scène 3D toutes les 20s =======
+    (function(){
+      const SWITCH_MS = 20000;
+      let showingScene = false;
+
+      async function showScene(){
+        const prod = document.getElementById('products-wrapper');
+        const wrap = document.getElementById('scene-wrapper');
+
+        prod.style.display = 'none';
+        wrap.style.display = 'block';
+
+        // init 3D la 1ère fois
+        window.initThree();
+        if (window.__threeFirstSet) { await window.__threeFirstSet(); window.__threeFirstSet = null; }
+
+        // assure la bonne taille
+        if (typeof window.onResize === 'function') window.onResize();
+
+        // lance le cycle des images de la scène
+        if (typeof window.startCycle === 'function') window.startCycle();
+
+        // (facultatif) si tu as un auto-rotate produits, tu peux le stopper ici
+
+        showingScene = true;
+      }
+
+      function hideScene(){
+        const prod = document.getElementById('products-wrapper');
+        const wrap = document.getElementById('scene-wrapper');
+
+        wrap.style.display = 'none';
+        prod.style.display = 'block';
+
+        // stop cycle 3D pour économiser (l’animation rAF peut rester)
+        if (typeof timerId !== 'undefined' && timerId) { clearInterval(timerId); timerId = null; }
+
+        // (facultatif) relancer l’auto-rotate produits ici
+
+        showingScene = false;
+      }
+
+      // Alternance 20 s
+      setInterval(() => {
+        if (showingScene) hideScene();
+        else showScene();
+      }, SWITCH_MS);
+
+      // Décommente si tu veux commencer par la scène directement :
+      // showScene();
+    })();
+  </script>
 </body>
 </html>

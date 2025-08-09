@@ -1,0 +1,48 @@
+<div id="scene-container" style="width: 600px; height: 400px;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+function createCubeWithImages(images) {
+  const container = document.getElementById('scene-container');
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(70, container.clientWidth / container.clientHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  container.innerHTML = '';
+  container.appendChild(renderer.domElement);
+
+  const light = new THREE.AmbientLight(0xffffff, 0.1);
+  scene.add(light);
+
+  const loader = new THREE.TextureLoader();
+
+  const faceTextures = [];
+  for (let i = 0; i < 6; i++) {
+    if (images[i]) {
+      faceTextures.push(new THREE.MeshBasicMaterial({ map: loader.load('images/' + images[i]) }));
+    } else {
+      faceTextures.push(new THREE.MeshBasicMaterial({ color: 0x999999 }));
+    }
+  }
+
+  const geometry = new THREE.BoxGeometry(3, 3, 3);
+  const cube = new THREE.Mesh(geometry, faceTextures);
+  scene.add(cube);
+
+  camera.position.z = 5;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+    renderer.render(scene, camera);
+  }
+  animate();
+}
+
+// Récupère 4 images aléatoires depuis PHP
+fetch('get-random-images.php')
+  .then(res => res.json())
+  .then(files => createCubeWithImages(files));
+</script>
