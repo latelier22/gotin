@@ -35,11 +35,12 @@ if ($action === 'list') {
 
 // === ACTION: ADD ===
 if ($action === 'add') {
-   $stmt = $db->prepare("INSERT INTO montres (nom, prix, description, image1, image2, image3, image4, categorie, reference, etat, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+   $stmt = $db->prepare("INSERT INTO montres (nom, prix, promotion, description, image1, image2, image3, image4, categorie, reference, etat, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)");
 $stmt->execute([
     $data['nom'] ?? '',
     $data['prix'] ?? 0,
+    $data['promotion'] ?? '',
     $data['description'] ?? '',
     $data['image1'] ?? '',
     $data['image2'] ?? '',
@@ -63,10 +64,11 @@ if ($action === 'edit') {
         echo json_encode(['error' => 'ID requis']);
         exit;
     }
-    $stmt = $db->prepare("UPDATE montres SET nom=?, prix=?, description=?, image1=?, image2=?, image3=?, image4=?, categorie=?, reference=?, etat=?, status=? WHERE id=?");
+    $stmt = $db->prepare("UPDATE montres SET nom=?, prix=?, promotion=?, description=?, image1=?, image2=?, image3=?, image4=?, categorie=?, reference=?, etat=?, status=? WHERE id=?");
 $stmt->execute([
     $data['nom'] ?? '',
     $data['prix'] ?? 0,
+    $data['promotion'] ?? '',
     $data['description'] ?? '',
     $data['image1'] ?? '',
     $data['image2'] ?? '',

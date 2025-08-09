@@ -10,6 +10,46 @@ let currentImageIndex = 0;
 
 let currentFilter = 'all';
 
+const AUTO_DELAY = 4000;
+let autoChange = true;        // tu as déjà cette variable
+let autoTimerId = null;
+
+// setInterval(() => {
+//   if (autoChange && montres.length > 1) {
+//     changeMontre(1);
+//   }
+// }, 4000); // 4000 ms = 4 secondes
+
+
+function startAutoRotate() {
+  stopAutoRotate();
+  autoTimerId = setInterval(() => {
+    if (autoChange && montres.length > 1) {
+      changeMontre(1, { fromAuto: true });
+    }
+  }, AUTO_DELAY);
+}
+
+function stopAutoRotate() {
+  if (autoTimerId) {
+    clearInterval(autoTimerId);
+    autoTimerId = null;
+  }
+}
+
+function resetAutoRotate() {
+  startAutoRotate();
+}
+
+function changeMontre(direction, opts = {}) {
+  const fromAuto = !!opts.fromAuto;
+  let newIndex = (currentMontreIndex + direction + montres.length) % montres.length;
+  showMontre(newIndex);
+  if (!fromAuto) resetAutoRotate(); // manuel => on redémarre le compte à rebours
+}
+
+
+
 
 function showMontre(index) {
   document.querySelector(`#montre-${currentMontreIndex}`)?.classList.remove('active');
@@ -23,6 +63,7 @@ function changeMontre(direction) {
 }
 
 function openModal(montreIndex, imageIndex) {
+  autoChange = false; 
   currentMontreIndex = montreIndex;
   currentImageIndex = imageIndex;
   document.getElementById("modalImage").src = montres[montreIndex].images[imageIndex];
@@ -31,17 +72,28 @@ function openModal(montreIndex, imageIndex) {
 
 function closeModal() {
   document.getElementById("imageModal").style.display = "none";
+  autoChange = true;             // on relance l’auto
+  resetAutoRotate();
 }
 
 function nextImage() {
-  currentImageIndex = (currentImageIndex + 1) % 4;
-  document.getElementById("modalImage").src = montres[currentMontreIndex].images[currentImageIndex];
+  const imgs = montres[currentMontreIndex].images.length
+    ? montres[currentMontreIndex].images
+    : ['images/placeholder.jpg'];
+
+  currentImageIndex = (currentImageIndex + 1) % imgs.length;
+  document.getElementById("modalImage").src = imgs[currentImageIndex];
 }
 
 function prevImage() {
-  currentImageIndex = (currentImageIndex - 1 + 4) % 4;
-  document.getElementById("modalImage").src = montres[currentMontreIndex].images[currentImageIndex];
+  const imgs = montres[currentMontreIndex].images.length
+    ? montres[currentMontreIndex].images
+    : ['images/placeholder.jpg'];
+
+  currentImageIndex = (currentImageIndex - 1 + imgs.length) % imgs.length;
+  document.getElementById("modalImage").src = imgs[currentImageIndex];
 }
+
 
 // Fermer la modale si clic dehors
 window.onclick = function(event) {
@@ -54,31 +106,36 @@ if (USE_LOCAL_DATA) {
 } else {
   // Charger le CSV et générer le HTML
   fetch('data/montres.csv')
-    .then(response => response.text())
-    .then(csvText => {
-      const data = Papa.parse(csvText, { header: true }).data;
+  .then(response => response.text())
+  .then(csvText => {
+    const data = Papa.parse(csvText, { header: true }).data;
 
-      montres = data
-  .filter(row => row.image1 && row.image2 && row.image3 && row.image4)
-  .map((row, index) => ({
-    id: index,
-    nom: row.nom,
-    prix: row.prix,
-    description: row.description,
-    reference: row.reference || '',
-    etat: row.etat || '',
-    status: row.status || '',
-    categorie: row.categorie || '',
-    images: [row.image1, row.image2, row.image3, row.image4]
-  }));
+    montres = data
+      // on accepte les produits même si 0 image (on mettra un placeholder)
+      .map((row, index) => {
+        const images = [row.image1, row.image2, row.image3, row.image4].filter(Boolean);
+        return {
+          id: index,
+          nom: row.nom,
+          prix: row.prix,
+          promotion: row.promotion,
+          description: row.description,
+          reference: row.reference || '',
+          etat: row.etat || '',
+          status: row.status || '',
+          categorie: row.categorie || '',
+          images // 0..4 images
+        };
+      })
+      // si tu veux masquer les produits SANS image, dé-commente la ligne ci-dessous:
+      // .filter(m => m.images.length > 0)
+      ;
 
+    renderMontres();
+  });
 
-      renderMontres();
-    });
 }
 
-
- 
 function renderMontres() {
   const container = document.getElementById("montres-container");
   container.style.position = "relative";
@@ -87,53 +144,90 @@ function renderMontres() {
   container.innerHTML = '';
   thumbs.innerHTML = '';
 
-  montres
-  .filter(montre => currentFilter === 'all' || montre.categorie === currentFilter)
-  .forEach((montre, index) => {
+  const filtered = montres.filter(m => currentFilter === 'all' || m.categorie === currentFilter);
+
+  filtered.forEach((montre, index) => {
+    const imgs = montre.images.length ? montre.images : ['images/placeholder.jpg'];
+    const mainIdx = imgs[1] ? 1 : 0; // si on a ≥2 images on met la 2e en fond, sinon la 1re
+
     // Affichage principal
     const div = document.createElement("div");
     div.className = "montre" + (index === 0 ? " active" : "");
     div.id = `montre-${index}`;
     div.innerHTML = `
-      <div class="main-display" style="background-image: url('${montre.images[1]}');" onclick="openModal(${index}, 1)">
-       <div class="info">
-      <h1>${montre.nom}</h1>
-      <p><strong>Référence :</strong> ${montre.reference || '—'}</p>
-      <p><strong>Prix :</strong> ${montre.prix} €</p>
-      <p><strong>Description :</strong> ${montre.description}</p>
-      <p><strong>État :</strong> ${montre.etat || '—'}</p>
-      <p><strong>Status :</strong> ${montre.status || '—'}</p>
-    </div>
+      <div class="main-display" style="background-image: url('${imgs[mainIdx]}');" onclick="openModal(${index}, ${mainIdx})">
+        ${hasPromo(montre) ? `<div class="ribbon"><span>PROMO</span></div>` : ''}
+        ${hasAchat(montre) ? `<div class="ribbon-left"><span>Achat en cours</span></div>` : ''}
+        ${hasVendu(montre) ? `<div class="ribbon-left"><span>VENDU</span></div>` : ''}
+        <div class="info">
+          <h1>${montre.nom || '—'}</h1>
+          <p><strong>Référence :</strong> ${montre.reference || '—'}</p>
+          <p><strong>Prix :</strong> ${priceHTML(montre)}</p>
+          <p><strong>Description :</strong> ${montre.description || '—'}</p>
+          <p><strong>État :</strong> ${montre.etat || '—'}</p>
+          <p><strong>Status :</strong> ${montre.status || '—'}</p>
+        </div>
       </div>
       <div class="gallery">
-        <img src="${montre.images[0]}" onclick="openModal(${index}, 0)">
-        <img src="${montre.images[2]}" onclick="openModal(${index}, 2)">
-        <img src="${montre.images[3]}" onclick="openModal(${index}, 3)">
+        ${imgs
+          .map((src, i) => i === mainIdx ? '' : `<img src="${src}" onclick="openModal(${index}, ${i})">`)
+          .join('')}
       </div>
     `;
     container.appendChild(div);
 
-    // Miniature
+    // Miniature de droite
     const thumb = document.createElement("div");
     thumb.className = "thumbnail";
-    thumb.innerHTML = `<img src="${montre.images[1]}" alt="${montre.nom}">`;
-    thumb.onclick = () => showMontre(index);
+    thumb.innerHTML = `<img src="${imgs[mainIdx]}" alt="${montre.nom || ''}">`;
+    thumb.onclick = () => { showMontre(index); resetAutoRotate(); };
+
     thumbs.appendChild(thumb);
   });
+  startAutoRotate();
 }
+
 
 function filterMontres(categorie) {
   currentFilter = categorie;
   renderMontres();
+  resetAutoRotate();
 }
 
-// Animation automatique : changement de montre toutes les 2 secondes
-let autoChange = true;
 
-setInterval(() => {
-  if (autoChange && montres.length > 1) {
-    changeMontre(1);
+
+
+
+
+
+
+function hasPromo(m) {
+  // true si promotion est un nombre > 0
+  const p = (m.promotion ?? "").toString().trim();
+  if (p === "") return false;
+  const n = Number(p);
+  return Number.isFinite(n) && n > 0;
+}
+function hasVendu(m) {
+  // true si promotion est un nombre > 0
+  return (m.status ?? "").toLowerCase() === "vendu";
+  
+}
+function hasAchat(m) {
+  // true si promotion est un nombre > 0
+  return (m.status ?? "").toLowerCase() === "achat en cours";
+  
+}
+
+function priceHTML(m) {
+  const prix = Number(m.prix);
+  const promo = Number(m.promotion);
+  if (hasPromo(m) && Number.isFinite(prix)) {
+    // prix barré + promo en gras
+    return `<span class="price-line"><span class="price-old">${prix} €</span><span class="price-new">${promo} €</span></span>`;
   }
-}, 4000); // 4000 ms = 4 secondes
+  // pas de promo : juste le prix si dispo
+  return m.prix ? `<span class="price-line">${m.prix} €</span>` : "";
+}
 
 

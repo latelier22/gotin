@@ -65,7 +65,7 @@
       align-items: flex-start;
     }
     .thumbs img {
-      height: 100px;
+      height: 50px;
       cursor: pointer;
       margin: 0;
       border-radius: 6px;
@@ -109,6 +109,32 @@
       animation: spin 1s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+
+    /* Prix */
+.price-line { margin: 6px 0; }
+.price-old { text-decoration: line-through; opacity: .7; margin-right: .4em; }
+.price-new { font-weight: 700; }
+
+/* Ruban promo (45°) */
+.main-display { position: relative; }
+.ribbon {
+  position: absolute;
+  top: 12px; left: -40px;
+  width: 160px; text-align: center;
+  transform: rotate(-45deg);
+  z-index: 3;
+}
+.ribbon span {
+  display: block;
+  background: #E53935; /* rouge promo */
+  color: #fff;
+  font-weight: 700;
+  padding: 6px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  letter-spacing: .5px;
+}
+
   </style>
 
   <!-- Librairies ZIP (optionnelles si tu utilises downloadZip) -->
@@ -143,7 +169,8 @@
       <col style="width:8%"><!-- Reference -->
       <col style="width:10%"><!-- Nom -->
       <col style="width:8%"><!-- Prix -->
-      <col style="width:30%"><!-- Description -->
+      <col style="width:8%"><!-- Promotion -->
+      <col style="width:22%"><!-- Description -->
       <col style="width:28%"><!-- Images -->
       <col style="width:6%"><!-- Actions -->
       <col style="width:5%"><!-- Catégorie -->
@@ -156,6 +183,7 @@
         <th>Reference</th>
         <th>Nom</th>
         <th>Prix</th>
+        <th>Promotion</th>
         <th class="col-description">Description</th>
         <th>Images</th>
         <th>Actions</th>
@@ -184,6 +212,7 @@
       <label>Reference : <input type="text" name="reference" required></label>
       <label>Nom : <input type="text" name="nom" required></label>
       <label>Prix : <input type="number" name="prix" required></label>
+      <label>Promotion : <input type="number" name="promotion" placeholder="entrer le nouveau prix"></label>
       <label>Description : <textarea name="description" rows="3" required></textarea></label>
       <label>Image 1 : <input type="file" name="image1" accept="image/*"></label>
       <label>Image 2 : <input type="file" name="image2" accept="image/*"></label>
@@ -244,7 +273,8 @@
         tr.innerHTML = `
           <td>${m.reference || ""}</td>
           <td>${m.nom || ""}</td>
-          <td>${m.prix ? m.prix + " €" : ""}</td>
+          <td>${m.prix ? (m.promotion ? `<s>${m.prix} €</s>` : m.prix + " €") : ""}</td>
+          <td>${m.promotion ? m.promotion + " €" : ""}</td>
           <td class="col-description"><div class="desc-content">${m.description || ""}</div></td>
           <td>
             <div class="thumbs">
@@ -296,6 +326,7 @@
       form.reference.value = m.reference || "";
       form.nom.value = m.nom || "";
       form.prix.value = m.prix || "";
+      form.promotion.value = m.promotion || "";
       form.description.value = m.description || "";
       form.categorie.value = m.categorie || "Montres";
       form.etat.value = m.etat || "Neuf";
@@ -344,6 +375,8 @@
       dataForm.append("etat", form.etat.value);
       dataForm.append("status", form.status.value);
       dataForm.append("action", editing ? "edit" : "add");
+      dataForm.append("promotion", form.promotion.value ? parseFloat(form.promotion.value) : "");
+
 
       showSpinner();
       await fetch(API_URL, { method: "POST", body: dataForm });
@@ -375,7 +408,8 @@
 
     function downloadProduitsCSV(){
       if (montres.length === 0) { alert("Aucune donnée"); return; }
-      const headers = ["id","reference","nom","prix","description","image1","image2","image3","image4","categorie","etat","status"];
+      const headers = ["id","reference","nom","prix","promotion","description","image1","image2","image3","image4","categorie","etat","status"];
+
       const rows = montres.map((m,i)=>headers.map(h=>{
         const v = h==="id" ? (m.id ?? i) : (m[h] ?? "");
         const s = typeof v === "string" ? v : (typeof v === "number" ? String(v) : JSON.stringify(v));
@@ -391,7 +425,8 @@
 
     function sendSQLiteDataToServer() {
       if (montres.length === 0) { alert("Aucune donnée à envoyer !"); return; }
-      const headers = ["id","reference","nom","prix","description","image1","image2","image3","image4","categorie","etat","status"];
+      const headers = ["id","reference","nom","prix","promotion","description","image1","image2","image3","image4","categorie","etat","status"];
+
       const rows = montres.map((m,i)=>headers.map(h=>{
         const v = h==="id" ? i : (m[h] || "");
         const s = typeof v === "string" ? v : (typeof v === "number" ? String(v) : JSON.stringify(v));
@@ -409,6 +444,8 @@
     }
 
     window.onload = fetchMontres;
+
+
   </script>
 </body>
 </html>

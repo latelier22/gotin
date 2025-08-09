@@ -424,3 +424,46 @@ html {
     margin-bottom: 50px;
   }
 }
+
+
+/* Prix */
+.price-line { margin: 6px 0; }
+.price-old { text-decoration: line-through; opacity: .7; margin-right: .4em; }
+.price-new { font-weight: 700; }
+
+/* Ruban promo (45°) */
+.ribbon {
+  position: absolute;
+  top: 12px;
+  right: -40px; /* au lieu de left */
+  width: 160px;
+  text-align: center;
+  transform: rotate(45deg); /* rotation dans l'autre sens */
+  z-index: 3;
+}
+.ribbon span {
+  display: block;
+  background: #E53935; /* rouge promo */
+  color: #fff;
+  font-weight: 700;
+  padding: 6px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  letter-spacing: .5px;
+}
+
+.ribbon-left {
+  position: absolute;
+  top: 12px; left: -40px;
+  width: 160px; text-align: center;
+  transform: rotate(-45deg);
+  z-index: 3;
+}
+.ribbon-left span {
+  display: block;
+  background: #E53935; /* rouge promo */
+  color: #fff;
+  font-weight: 700;
+  padding: 6px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  letter-spacing: .5px;
+}
