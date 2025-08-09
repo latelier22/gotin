@@ -5,7 +5,7 @@ body {
   background-color: #000;
   color: #D4AF37;
   overflow-x: hidden;
-  width : 100vw;
+  width: 100vw;
   height: 100vh;
 }
 
@@ -16,7 +16,7 @@ html {
 .container h1 {
   text-align: left;
   font-size: 2em;
-  margin : 10px 10px 10px;
+  margin: 10px 10px 10px;
   color: #FFD700;
   letter-spacing: 2px;
   text-shadow: 1px 1px 8px #000;
@@ -343,6 +343,42 @@ html {
   margin-bottom: 10px;
 }
 
+
+/* --- SUPPRIMER TOUT L'ESPACE AVANT LE FOOTER --- */
+.container {
+  padding-bottom: 0 !important;
+}
+
+.main-layout {
+  margin-bottom: 0 !important;
+}
+
+.center-panel {
+  margin-bottom: 0 !important;
+}
+
+#montres-container {
+  margin-bottom: 0 !important;
+}
+
+.navigation {
+  margin-top: 50px;
+  
+  /* garde un peu d'air au-dessus si tu veux */
+  margin-bottom: -10px !important;
+}
+
+.footer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Mobile / tablette : garder le même comportement */
+@media (max-width: 1024px) {}
+
+
+
+
 /* Responsive tablette/mobile */
 @media (max-width: 1024px) {
   .main-layout {
@@ -376,7 +412,7 @@ html {
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
-    margin: 30px 0;
+    margin: 20px 0 0 !important;
   }
 
   .navigation button {

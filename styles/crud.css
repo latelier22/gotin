@@ -1,0 +1,97 @@
+body {
+      background: #111;
+      color: #FFD700;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+  table {
+  margin: auto;
+  border-collapse: collapse;
+  width: 95%;
+  background: #222;
+  color: white;
+  table-layout: fixed;           /* IMPORTANT : pour respecter les % de colonnes */
+}
+
+th, td {
+  border: 1px solid #555;
+  padding: 10px;
+  vertical-align: top;           /* évite les grandes hauteurs si une cellule est plus haute */
+}
+
+    img {
+      height: 100px;
+      cursor: pointer;
+      margin: 2px;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 8px 15px;
+      margin: 5px;
+      font-weight: bold;
+      background: #FFD700;
+      color: #111;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .thumbs img:hover {
+      transform: scale(1.1);
+    }
+
+    #spinner {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #spinner div {
+      border: 6px solid #FFD700;
+      border-top: 6px solid transparent;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+
+
+.col-description {               /* la cellule garde son rôle de cellule */
+  width: 30%;                    /* 30% du tableau */
+}
+
+.col-description .desc-content { /* c’est ce wrapper qui scrolle */
+  max-height: calc(1.4em * 3);   /* ~3 lignes */
+  overflow-y: auto;              /* scroll vertical si dépasse */
+  line-height: 1.4em;
+  white-space: normal;
+  overflow-wrap: anywhere;       /* casse les mots trop longs */
+}
+
+/* (optionnel) pour figer d’autres largeurs et éviter les surprises */
+th:nth-child(1), td:nth-child(1) { width: 110px; }  /* Référence */
+th:nth-child(2), td:nth-child(2) { width: 160px; }  /* Nom */
+th:nth-child(3), td:nth-child(3) { width: 90px; }   /* Prix */
+th:nth-child(5), td:nth-child(5) { width: 260px; }  /* Images */
+th:nth-child(6), td:nth-child(6) { width: 120px; }  /* Actions */

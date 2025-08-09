@@ -1,87 +1,119 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
   <meta charset="UTF-8" />
   <title>CRUD Montres</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Styles: tout-en-un pour être autonome -->
   <style>
+    :root { --gold:#FFD700; --bg:#111; --panel:#222; --border:#555; }
     body {
-      background: #111;
-      color: #FFD700;
-      font-family: sans-serif;
+      background: var(--bg);
+      color: var(--gold);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Cormorant Garamond", sans-serif;
       text-align: center;
+      margin: 0;
       padding: 20px;
     }
-
-    table {
-      margin: auto;
-      border-collapse: collapse;
-      width: 95%;
-      background: #222;
-      color: white;
-    }
-
-    th,
-    td {
-      border: 1px solid #555;
-      padding: 10px;
-    }
-
-    img {
-      height: 100px;
-      cursor: pointer;
-      margin: 2px;
-      border-radius: 5px;
-    }
+    h1 { margin: 0 0 12px }
 
     button {
-      padding: 8px 15px;
+      padding: 8px 14px;
       margin: 5px;
-      font-weight: bold;
-      background: #FFD700;
+      font-weight: 700;
+      background: var(--gold);
       color: #111;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
     }
 
-    .thumbs img:hover {
-      transform: scale(1.1);
+    /* Tableau */
+    table {
+      margin: 18px auto;
+      border-collapse: collapse;
+      background: var(--panel);
+      color: #fff;
+      table-layout: fixed; /* indispensable avec colgroup */
+    }
+    colgroup col { width: auto; } /* chaque col a sa width inline */
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+    thead th { text-align: center; }
+
+    /* Description: wrapper scrollable à l'intérieur du td */
+    .col-description { text-align: left; }
+    .col-description .desc-content {
+      max-height: calc(1.4em * 3); /* ~3 lignes */
+      overflow-y: auto;
+      line-height: 1.4em;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
 
+    /* Miniatures images */
+    .thumbs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: flex-start;
+    }
+    .thumbs img {
+      height: 100px;
+      cursor: pointer;
+      margin: 0;
+      border-radius: 6px;
+      display: block;
+    }
+    .thumbs img:hover { transform: scale(1.03); }
+
+    /* Modale slider */
+    #modal {
+      display:none; position:fixed; inset:0;
+      background: rgba(0,0,0,.85); z-index: 1000;
+      justify-content:center; align-items:center; flex-direction:column;
+    }
+    #modal img { max-width:100vw; max-height:100vh; margin-bottom:10px; }
+    #modal .close {
+      position:absolute; top:10px; right:10px;
+      background:#fff; border-radius:6px; padding:6px 10px; border:none; cursor:pointer;
+    }
+
+    /* Modale formulaire */
+    #formModal {
+      display:none; position:fixed; inset:0;
+      background:#000c; z-index:9999; justify-content:center; align-items:center;
+    }
+    #formMontre {
+      background:#222; padding:20px; color:white; max-width:520px; width:90%; border-radius:10px;
+      text-align:left;
+    }
+    #formMontre label { display:block; margin:8px 0; }
+
+    /* Spinner */
     #spinner {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 9999;
-      justify-content: center;
-      align-items: center;
+      display:none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+      z-index: 9999; justify-content:center; align-items:center;
     }
-
     #spinner div {
-      border: 6px solid #FFD700;
+      border: 6px solid var(--gold);
       border-top: 6px solid transparent;
       border-radius: 50%;
-      width: 60px;
-      height: 60px;
+      width: 60px; height: 60px;
       animation: spin 1s linear infinite;
     }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
+
+  <!-- Librairies ZIP (optionnelles si tu utilises downloadZip) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.1.0/jszip-utils.min.js"></script>
 </head>
 
 <body>
@@ -89,54 +121,56 @@
   <h1>Gestion des produits</h1>
 
   <div>
-
-    <button
-      onclick="window.open('https://docs.google.com/spreadsheets/d/1RImwBSEucX0d6chHduucER-GVvM_nzlSFmvAjlQnScg/edit?usp=sharing', '_blank')">GoogleSheet</button>
-
-    <!-- <button onclick="window.location.href='import.php'">⬅️ Importer de GoogleSheet</button>
-    <button onclick="envoyerVersGoogle()">➡️ Exporter vers GoogleSheet</button>
-    <button onclick="downloadCSV()">⬇️ Télécharge CSV GoogleSheet</button> -->
+    <button onclick="window.open('https://docs.google.com/spreadsheets/d/1RImwBSEucX0d6chHduucER-GVvM_nzlSFmvAjlQnScg/edit?usp=sharing', '_blank')">GoogleSheet</button>
     <button onclick="downloadZip()">Télécharger ZIP</button>
-    <!-- <button onclick="replaceCSVFromData()">📤 Exporter Google vers serveur</button> -->
     <button onclick="window.location.href='index.html'">🏠 Voir les produits</button>
     <button onclick="openAddModal()">➕ Ajouter un produit</button>
     <button onclick="downloadProduitsCSV()">📄 Créer produits.csv</button>
     <button onclick="sendSQLiteDataToServer()">📤 Envoyer données vers serveur</button>
     <button onclick="window.location.href='creerZip.php'">📄 Créer Zip pour tablette</button>
-
   </div>
-  <div>
-    <div id="filters" style="margin-bottom: 20px;">
-      <button onclick="filterCategory('All')">📦 Tous</button>
-      <button onclick="filterCategory('Montres')">⌚ Montres</button>
-      <button onclick="filterCategory('Chaussures')">👟 Chaussures</button>
-      <button onclick="filterCategory('Autres')">📁 Autres</button>
-    </div>
 
+  <div id="filters" style="margin-bottom: 12px;">
+    <button onclick="filterCategory('All')">📦 Tous</button>
+    <button onclick="filterCategory('Montres')">⌚ Montres</button>
+    <button onclick="filterCategory('Chaussures')">👟 Chaussures</button>
+    <button onclick="filterCategory('Autres')">📁 Autres</button>
   </div>
 
   <table>
+    <!-- Largeurs fixes (total = 100%) pour éviter tout espace vide -->
+    <colgroup>
+      <col style="width:8%"><!-- Reference -->
+      <col style="width:10%"><!-- Nom -->
+      <col style="width:8%"><!-- Prix -->
+      <col style="width:30%"><!-- Description -->
+      <col style="width:28%"><!-- Images -->
+      <col style="width:6%"><!-- Actions -->
+      <col style="width:5%"><!-- Catégorie -->
+      <col style="width:3%"><!-- État -->
+      <col style="width:2%"><!-- Status -->
+    </colgroup>
+
     <thead>
       <tr>
         <th>Reference</th>
         <th>Nom</th>
         <th>Prix</th>
-        <th>Description</th>
+        <th class="col-description">Description</th>
         <th>Images</th>
         <th>Actions</th>
         <th>Catégorie</th>
         <th>État</th>
-        <th>Status</th>ƒ
+        <th>Status</th>
       </tr>
     </thead>
     <tbody id="montreTable"></tbody>
   </table>
 
   <!-- Modale Slider -->
-  <div id="modal"
-    style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center; flex-direction:column;">
-    <button onclick="closeModal()" style="position:absolute; top:10px; right:10px;">✖</button>
-    <img id="modal-image" style="max-width:100vw; max-height:100vh; margin-bottom:10px;" />
+  <div id="modal">
+    <button class="close" onclick="closeModal()">✖</button>
+    <img id="modal-image" alt="">
     <div>
       <button onclick="prevImage()">⬅️</button>
       <button onclick="nextImage()">➡️</button>
@@ -144,60 +178,51 @@
   </div>
 
   <!-- Modale Formulaire -->
-  <div id="formModal"
-    style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#000c; z-index:9999; justify-content:center; align-items:center;">
-    <form id="formMontre"
-      style="background:#222; padding:20px; color:white; max-width:500px; width:90%; border-radius:10px;"
-      enctype="multipart/form-data">
+  <div id="formModal">
+    <form id="formMontre" enctype="multipart/form-data">
       <input type="hidden" name="id">
-      <label>Reference : <input type="text" name="reference" required></label><br>
-      <label>Nom : <input type="text" name="nom" required></label><br>
-      <label>Prix : <input type="number" name="prix" required></label><br>
-      <label>Description : <textarea name="description" rows="3" required></textarea></label><br>
-      <label>Image 1 : <input type="file" name="image1" accept="image/*"></label><br>
-      <label>Image 2 : <input type="file" name="image2" accept="image/*"></label><br>
-      <label>Image 3 : <input type="file" name="image3" accept="image/*"></label><br>
-      <label>Image 4 : <input type="file" name="image4" accept="image/*"></label><br>
+      <label>Reference : <input type="text" name="reference" required></label>
+      <label>Nom : <input type="text" name="nom" required></label>
+      <label>Prix : <input type="number" name="prix" required></label>
+      <label>Description : <textarea name="description" rows="3" required></textarea></label>
+      <label>Image 1 : <input type="file" name="image1" accept="image/*"></label>
+      <label>Image 2 : <input type="file" name="image2" accept="image/*"></label>
+      <label>Image 3 : <input type="file" name="image3" accept="image/*"></label>
+      <label>Image 4 : <input type="file" name="image4" accept="image/*"></label>
       <label>Catégorie :
         <select name="categorie">
           <option>Montres</option>
           <option>Chaussures</option>
           <option>Autres</option>
         </select>
-
-        <label>Etat : <input type="text" name="etat" value="Neuf" required></label><br>
-
-
-        <label>Status :
-          <select name="status">
-            <option value="disponible">Disponible</option>
-            <option value="achat en cours">Achat en cours</option>
-            <option value="vendu">Vendu</option>
-          </select>
-        </label><br>
+      </label>
+      <label>Etat : <input type="text" name="etat" value="Neuf" required></label>
+      <label>Status :
+        <select name="status">
+          <option value="disponible">Disponible</option>
+          <option value="achat en cours">Achat en cours</option>
+          <option value="vendu">Vendu</option>
+        </select>
+      </label>
+      <div style="margin-top:10px">
         <button type="submit">💾 Enregistrer</button>
         <button type="button" onclick="closeModalForm()">❌ Annuler</button>
+      </div>
     </form>
   </div>
 
-  <div id="spinner">
-    <div></div>
-  </div>
+  <div id="spinner"><div></div></div>
 
-  <script src="js/config.js"></script>
-
-  <script src="js/sqliteVersCsv.js"></script>
   <script>
-    let currentCategory = "All";
-
     const API_URL = "api.php";
+    let currentCategory = "All";
     let montres = [];
     let currentImages = [];
     let currentIndex = 0;
     let editing = false;
 
-    function showSpinner() { document.getElementById("spinner").style.display = "flex"; }
-    function hideSpinner() { document.getElementById("spinner").style.display = "none"; }
+    function showSpinner(){ document.getElementById("spinner").style.display="flex"; }
+    function hideSpinner(){ document.getElementById("spinner").style.display="none"; }
 
     async function fetchMontres() {
       showSpinner();
@@ -211,94 +236,82 @@
       const tbody = document.getElementById("montreTable");
       tbody.innerHTML = "";
 
-      const filtered = currentCategory === "All"
-        ? montres
-        : montres.filter(m => m.categorie === currentCategory);
+      const filtered = currentCategory === "All" ? montres : montres.filter(m => m.categorie === currentCategory);
 
       filtered.forEach((m, index) => {
+        const imgs = [m.image1, m.image2, m.image3, m.image4].filter(Boolean); // évite les vides
         const tr = document.createElement("tr");
         tr.innerHTML = `
-        <td>${m.reference}</td>
-      <td>${m.nom}</td>
-      <td>${m.prix} €</td>
-      <td>${m.description}</td>
-      <td>
-        <div class="thumbs">
-          ${[m.image1, m.image2, m.image3, m.image4].map((img, i) =>
-          `<img src="${img}" onclick="openModal([${[m.image1, m.image2, m.image3, m.image4].map(i => `'${i}'`).join(',')}], ${i})">`).join('')
-          }
-        </div>
-      </td>
-      <td>
-        <button onclick="openEditModal(${index})">📝</button>
-        <button onclick="deleteMontre(${m.id})">🗑️</button>
-      </td>
-      <td>${m.categorie}</td>
-      <td>${m.etat}</td>
-      <td>${m.status}</td>`;
+          <td>${m.reference || ""}</td>
+          <td>${m.nom || ""}</td>
+          <td>${m.prix ? m.prix + " €" : ""}</td>
+          <td class="col-description"><div class="desc-content">${m.description || ""}</div></td>
+          <td>
+            <div class="thumbs">
+              ${imgs.map((src, i) => `<img src="${src}" alt="" onclick="openModal(${JSON.stringify(imgs)}, ${i})">`).join('')}
+            </div>
+          </td>
+          <td>
+            <button title="Éditer" onclick="openEditModal(${index})">📝</button>
+            <button title="Supprimer" onclick="deleteMontre(${m.id})">🗑️</button>
+          </td>
+          <td>${m.categorie || ""}</td>
+          <td>${m.etat || ""}</td>
+          <td>${m.status || ""}</td>
+        `;
         tbody.appendChild(tr);
       });
     }
 
-    function filterCategory(cat) {
-      currentCategory = cat;
-      displayMontres();
-    }
+    function filterCategory(cat){ currentCategory = cat; displayMontres(); }
 
-
-    function openModal(images, start) {
-      currentImages = images;
-      currentIndex = start;
+    /* Slider images */
+    function openModal(images, start){
+      currentImages = images; currentIndex = start;
       document.getElementById("modal-image").src = images[start];
       document.getElementById("modal").style.display = "flex";
     }
-    function closeModal() { document.getElementById("modal").style.display = "none"; }
-    function prevImage() {
+    function closeModal(){ document.getElementById("modal").style.display = "none"; }
+    function prevImage(){
       currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
       document.getElementById("modal-image").src = currentImages[currentIndex];
     }
-    function nextImage() {
+    function nextImage(){
       currentIndex = (currentIndex + 1) % currentImages.length;
       document.getElementById("modal-image").src = currentImages[currentIndex];
     }
 
-    function openAddModal() {
+    /* Formulaire */
+    function openAddModal(){
       editing = false;
       const form = document.getElementById("formMontre");
-      form.reset();
-      form.id.value = "";
+      form.reset(); form.id.value = "";
       document.getElementById("formModal").style.display = "flex";
     }
-
-    function openEditModal(index) {
+    function openEditModal(index){
       editing = true;
       const m = montres[index];
       const form = document.getElementById("formMontre");
       form.id.value = m.id;
-      form.reference.value = m.reference; // <-- AJOUT ICI
-      form.nom.value = m.nom;
-      form.prix.value = m.prix;
-      form.description.value = m.description;
-      form.categorie.value = m.categorie; // <-- AJOUT ICI
-      form.etat.value = m.etat;
-      form.status.value = m.status;
-
+      form.reference.value = m.reference || "";
+      form.nom.value = m.nom || "";
+      form.prix.value = m.prix || "";
+      form.description.value = m.description || "";
+      form.categorie.value = m.categorie || "Montres";
+      form.etat.value = m.etat || "Neuf";
+      form.status.value = m.status || "disponible";
       document.getElementById("formModal").style.display = "flex";
     }
+    function closeModalForm(){ document.getElementById("formModal").style.display = "none"; }
 
-    function closeModalForm() {
-      document.getElementById("formModal").style.display = "none";
-    }
-
-    async function deleteMontre(id) {
-      if (!confirm("Confirmer suppression ?")) return;
+    async function deleteMontre(id){
+      if(!confirm("Confirmer suppression ?")) return;
       const fd = new FormData();
-      fd.append("action", "delete");
+      fd.append("action","delete");
       fd.append("id", id);
       showSpinner();
-      const res = await fetch(API_URL, { method: "POST", body: fd });
+      await fetch(API_URL, { method:"POST", body: fd });
       hideSpinner();
-      <!-- alert(await res.text()); -->
       fetchMontres();
     }
 
@@ -315,11 +328,12 @@
           imageForm.append(`image${i}`, file);
           imagePaths.push("images/" + file.name);
         } else {
-          imagePaths.push(editing ? montres.find(m => m.id == form.id.value)[`image${i}`] : "");
+          const existing = editing ? (montres.find(m => m.id == form.id.value) || {})[`image${i}`] : "";
+          imagePaths.push(existing || "");
         }
       }
 
-      if (imageForm.has("image1") || imageForm.has("image2") || imageForm.has("image3") || imageForm.has("image4")) {
+      if ([1,2,3,4].some(i => imageForm.has(`image${i}`))) {
         await fetch("upload-images.php", { method: "POST", body: imageForm });
       }
 
@@ -329,197 +343,72 @@
       dataForm.append("image4", imagePaths[3]);
       dataForm.append("etat", form.etat.value);
       dataForm.append("status", form.status.value);
-
       dataForm.append("action", editing ? "edit" : "add");
 
       showSpinner();
-      const res = await fetch(API_URL, { method: "POST", body: dataForm });
+      await fetch(API_URL, { method: "POST", body: dataForm });
       hideSpinner();
 
       closeModalForm();
       fetchMontres();
     });
 
-    window.onload = fetchMontres;
-  </script>
-
-  <script>
-    async function envoyerVersGoogle() {
-      const payload = {
-        action: "replaceAll",
-        values: montres.map((m, i) => [
-          i,
-          m.nom || "",
-          m.prix || 0,
-          m.description || "",
-          m.image1 || "",
-          m.image2 || "",
-          m.image3 || "",
-          m.image4 || ""
-        ])
-      };
-
-      console.log("📤 Envoi vers GoogleSheet :", payload);
-
-      try {
-        const res = await fetch(GOOGLE_API_URL, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
-
-        const txt = await res.text();
-        console.log("✅ Réponse GoogleSheet :", txt);
-        alert("✅ Résultat : " + txt);
-      } catch (err) {
-        alert("❌ Erreur d'envoi : " + err);
-      }
-    }
-
-
-    function downloadCSV() {
-      const headers = ["id", "nom", "prix", "description", "image1", "image2", "image3", "image4"];
-      const rows = montres.map(r =>
-        headers.map(h => {
-          const value = r[h];
-          const str = typeof value === 'string'
-            ? value
-            : typeof value === 'number'
-              ? value.toString()
-              : JSON.stringify(value);
-          return `"${str.replace(/"/g, '""')}"`;
-        }).join(",")
-      );
-      const csvContent = [headers.join(","), ...rows].join("\n");
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "montres.csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-
-    function replaceCSVFromData() {
-      const headers = ["id", "nom", "prix", "description", "image1", "image2", "image3", "image4"];
-      const rows = montres.map((m, i) =>
-        headers.map(h => {
-          const value = h === "id" ? i : (m[h] || "");
-          const str = typeof value === 'string'
-            ? value
-            : typeof value === 'number'
-              ? value.toString()
-              : JSON.stringify(value);
-          return `"${str.replace(/"/g, '""')}"`;
-        }).join(",")
-      );
-      const csvContent = [headers.join(","), ...rows].join("\n");
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const formData = new FormData();
-      formData.append("csvFile", blob, "montres.csv");
-      showSpinner();
-      fetch("upload.php", {
-        method: "POST",
-        body: formData
-      })
-        .then(res => res.text())
-        .then(msg => {
-          hideSpinner();
-          alert("✅ Fichier CSV mis à jour sur le serveur :\n" + msg);
-        })
-        .catch(err => {
-          hideSpinner();
-          alert("❌ Erreur lors de l'envoi : " + err);
-        });
-    }
-
-  </script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.1.0/jszip-utils.min.js"></script>
-
-
-  <script>
+    /* Exports */
     async function downloadZip() {
       const zip = new JSZip();
-
-      // Liste des fichiers à inclure
       const files = [
         { path: 'data/montres.csv', name: 'montres.csv' },
         { path: 'index.html', name: 'index.html' }
       ];
-
-      // Fetch and add each file to the ZIP
       for (const file of files) {
-        try {
-          const response = await fetch(file.path);
-          if (!response.ok) throw new Error(`Erreur de chargement : ${file.path}`);
-          const content = await response.text();
-          zip.file(file.name, content);
-        } catch (err) {
-          alert(err.message);
-          return;
-        }
+        const response = await fetch(file.path);
+        if (!response.ok) { alert(`Erreur de chargement : ${file.path}`); return; }
+        const content = await response.text();
+        zip.file(file.name, content);
       }
-
-      // Génère et télécharge le ZIP
-      zip.generateAsync({ type: 'blob' })
-        .then(function (content) {
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(content);
-          a.download = 'fichiers_montres.zip';
-          a.click();
-        });
+      const content = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(content);
+      a.download = 'fichiers_montres.zip';
+      a.click();
     }
 
-  function sendSQLiteDataToServer() {
-    if (montres.length === 0) {
-      alert("Aucune donnée à envoyer !");
-      return;
+    function downloadProduitsCSV(){
+      if (montres.length === 0) { alert("Aucune donnée"); return; }
+      const headers = ["id","reference","nom","prix","description","image1","image2","image3","image4","categorie","etat","status"];
+      const rows = montres.map((m,i)=>headers.map(h=>{
+        const v = h==="id" ? (m.id ?? i) : (m[h] ?? "");
+        const s = typeof v === "string" ? v : (typeof v === "number" ? String(v) : JSON.stringify(v));
+        return `"${s.replace(/"/g,'""')}"`;
+      }).join(","));
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "produits.csv";
+      a.click();
     }
 
-    const headers = [
-      "id", "reference", "nom", "prix", "description",
-      "image1", "image2", "image3", "image4",
-      "categorie", "etat", "status"
-    ];
+    function sendSQLiteDataToServer() {
+      if (montres.length === 0) { alert("Aucune donnée à envoyer !"); return; }
+      const headers = ["id","reference","nom","prix","description","image1","image2","image3","image4","categorie","etat","status"];
+      const rows = montres.map((m,i)=>headers.map(h=>{
+        const v = h==="id" ? i : (m[h] || "");
+        const s = typeof v === "string" ? v : (typeof v === "number" ? String(v) : JSON.stringify(v));
+        return `"${s.replace(/"/g,'""')}"`;
+      }).join(","));
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const formData = new FormData();
+      formData.append("csvFile", blob, "montres.csv");
+      showSpinner();
+      fetch("upload.php", { method:"POST", body: formData })
+        .then(r => r.text())
+        .then(msg => { hideSpinner(); alert("✅ CSV mis à jour sur le serveur :\n" + msg); })
+        .catch(err => { hideSpinner(); alert("❌ Erreur : " + err.message); });
+    }
 
-    const rows = montres.map((m, i) =>
-      headers.map(h => {
-        const value = h === "id" ? i : (m[h] || "");
-        const str = typeof value === 'string'
-          ? value
-          : typeof value === 'number'
-            ? value.toString()
-            : JSON.stringify(value);
-        return `"${str.replace(/"/g, '""')}"`;
-      }).join(",")
-    );
-
-    const csvContent = [headers.join(","), ...rows].join("\n");
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const formData = new FormData();
-    formData.append("csvFile", blob, "montres.csv");
-
-    showSpinner();
-    fetch("upload.php", {
-      method: "POST",
-      body: formData
-    })
-      .then(res => res.text())
-      .then(msg => {
-        hideSpinner();
-        alert("✅ CSV mis à jour sur le serveur :\n" + msg);
-      })
-      .catch(err => {
-        hideSpinner();
-        alert("❌ Erreur lors de l'envoi : " + err.message);
-      });
-  }
-
+    window.onload = fetchMontres;
   </script>
-
 </body>
-
 </html>
