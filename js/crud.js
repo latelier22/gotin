@@ -107,27 +107,42 @@ document.getElementById("formMontre").addEventListener("submit", async (e) => {
     const form = e.target;
     const dataForm = new FormData(form);
     const imageForm = new FormData();
-    const imagePaths = [];
+    let imagePaths = [];
 
-    for (let i = 1; i <= 4; i++) {
-        const file = form[`image${i}`].files[0];
-        if (file) {
-            imageForm.append(`image${i}`, file);
-            imagePaths.push("images/" + file.name);
+    // Récupère les fichiers sélectionnés
+    const files = form.images.files;
+
+    // Si des nouvelles images ont été choisies → remplacer
+    if (files.length > 0) {
+        for (let i = 0; i < files.length && i < 4; i++) {
+            imageForm.append(`image${i + 1}`, files[i]);
+            imagePaths.push("images/" + files[i].name);
+        }
+        // Complète à 4 slots si moins d'images
+        while (imagePaths.length < 4) {
+            imagePaths.push("");
+        }
+    } else {
+        // Pas de nouvelles images → garder celles existantes si édition
+        if (editing) {
+            const existing = montres.find(m => m.id == form.id.value) || {};
+            imagePaths = [existing.image1 || "", existing.image2 || "", existing.image3 || "", existing.image4 || ""];
         } else {
-            const existing = editing ? (montres.find(m => m.id == form.id.value) || {})[`image${i}`] : "";
-            imagePaths.push(existing || "");
+            imagePaths = ["", "", "", ""];
         }
     }
 
-    if ([1, 2, 3, 4].some(i => imageForm.has(`image${i}`))) {
+    // Upload si nouvelles images
+    if (files.length > 0) {
         await fetch("upload-images.php", { method: "POST", body: imageForm });
     }
 
+    // Ajoute au formulaire final
     dataForm.append("image1", imagePaths[0]);
     dataForm.append("image2", imagePaths[1]);
     dataForm.append("image3", imagePaths[2]);
     dataForm.append("image4", imagePaths[3]);
+
     dataForm.append("etat", form.etat.value);
     dataForm.append("status", form.status.value);
     dataForm.append("action", editing ? "edit" : "add");
