@@ -384,7 +384,24 @@ async function deleteMontre(id){
 // ---------- Exports (optionnels) ----------
 async function downloadZip(){ /* ... si besoin ... */ }
 function downloadProduitsCSV(){ /* ... si besoin ... */ }
-function sendSQLiteDataToServer(){ /* ... si besoin ... */ }
+function sendSQLiteDataToServer(){
+  if (!montres.length){ alert("Aucune donnée à envoyer !"); return; }
+  const headers = ["id","reference","nom","prix","promotion","description","image1","image2","image3","image4","categorie","etat","status"];
+  const rows = montres.map((m,i)=> headers.map(h=>{
+    const v = h==="id" ? i : (m[h] || "");
+    const s = typeof v==="string" ? v : (typeof v==="number" ? String(v) : JSON.stringify(v));
+    return `"${s.replace(/"/g,'""')}"`;
+  }).join(","));
+  const csv = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], {type:'text/csv'});
+  const formData = new FormData();
+  formData.append("csvFile", blob, "montres.csv");
+  showSpinner();
+  fetch("upload.php", { method:"POST", body:formData })
+    .then(r=>r.text())
+    .then(msg=>{ hideSpinner(); alert("✅ CSV mis à jour sur le serveur :\n"+msg); })
+    .catch(err=>{ hideSpinner(); alert("❌ Erreur : "+err.message); });
+}
 
 // ---------- Bootstrap ----------
 window.addEventListener('DOMContentLoaded', async () => {
