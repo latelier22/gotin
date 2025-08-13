@@ -134,6 +134,47 @@
    border-radius: 6px;
 }
 
+  /* forcer la cellule marque à laisser dépasser le zoom */
+  table td { overflow: visible !important; }
+
+  /* wrapper */
+  td .brand-cell{
+    display:flex !important;
+    align-items:center !important;
+    gap:8px !important;
+    position:relative !important;
+    overflow:visible !important;
+  }
+
+  /* logo (taille + style + priorité max) */
+  td .brand-cell img.brand-logo{
+    width:64px !important;
+    height:64px !important;
+    object-fit:cover !important;
+    background:#fff !important;
+    border:1px solid #ccc !important;
+    border-radius:6px !important;
+    margin:2px !important;
+    box-shadow:0 2px 4px rgba(0,0,0,.2) !important;
+    cursor:pointer !important;
+    transition:transform .12s ease, box-shadow .12s ease !important;
+    transform-origin:center center !important;
+    position:relative !important;  /* pour z-index */
+    z-index:1 !important;
+  }
+
+  /* zoom au survol */
+  td .brand-cell img.brand-logo:hover{
+    transform:scale(1.9) !important;
+    z-index:9999 !important;
+    box-shadow:0 10px 28px rgba(0,0,0,.35) !important;
+  }
+
+
+/* évite que le TD coupe le zoom (au cas où certains styles le feraient) */
+table td { overflow: visible; }
+
+
 .thumbs img:hover { transform: scale(1.5); }
 
 .img-edit-modal {

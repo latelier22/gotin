@@ -5,20 +5,24 @@
   <title>CRUD Montres</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Styles: tout-en-un pour être autonome -->
+  <!-- Styles -->
   <link rel="stylesheet" href="styles/crud.css">
-  
-  <script src="js/marque.js" defer></script>
-  <script src="js/crud.js" defer></script>
- <!-- dans <head> -->
 
+  <!-- Mini styles nécessaires pour la colonne Marque -->
+  <style>
+    .brand-cell { display:inline-flex; align-items:center; gap:8px; min-width:0; }
+    .brand-logo { width:22px; height:22px; object-fit:contain; background:#0f0f0f; border:1px solid #555; border-radius:4px; padding:2px; }
+    .brand-name { display:inline-block; max-width:14ch; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  </style>
 
+  <!-- Scripts (ORDRE IMPORTANT) -->
+  <script>window.API_URL = "api.php";</script>
+  <script src="js/marque.js?v=3" defer></script>
+  <script src="js/crud.js?v=3" defer></script>
 
-  <!-- Librairies ZIP (optionnelles si tu utilises downloadZip) -->
+  <!-- ZIP (optionnel) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.1.0/jszip-utils.min.js"></script>
-  
-  
 </head>
 
 <body>
@@ -26,14 +30,10 @@
   <h1>Gestion des produits</h1>
 
   <div>
-    <!-- <button onclick="window.open('https://docs.google.com/spreadsheets/d/1RImwBSEucX0d6chHduucER-GVvM_nzlSFmvAjlQnScg/edit?usp=sharing', '_blank')">GoogleSheet</button> -->
-    <!-- <button onclick="downloadZip()">Télécharger ZIP</button> -->
     <button onclick="window.location.href='index.html'">🏠 Voir les produits</button>
     <button onclick="openBrandModal()">🏷️ Marques</button>
     <button onclick="openAddModal()">➕ Ajouter un produit</button>
-    <!-- <button onclick="downloadProduitsCSV()">📄 Créer produits.csv</button> -->
     <button onclick="sendSQLiteDataToServer()">📤 Envoyer données vers serveur</button>
-    <!-- <button onclick="window.location.href='creerZip.php'">📄 Créer Zip pour tablette</button> -->
   </div>
 
   <div id="filters" style="margin-bottom: 12px;">
@@ -44,171 +44,166 @@
   </div>
 
   <table>
-    <!-- Largeurs fixes (total = 100%) pour éviter tout espace vide -->
     <colgroup>
-  <col style="width:6%"><!-- Reference -->
-  <col style="width:8%"><!-- Marque -->
-  <col style="width:10%"><!-- Nom -->
-  <col style="width:7%"><!-- Prix -->
-  <col style="width:7%"><!-- Promotion -->
-  <col style="width:12%"><!-- Courte description -->
-  <col style="width:16%"><!-- Description -->
-  <col style="width:18%"><!-- Images -->
-  <col style="width:6%"><!-- Actions -->
-  <col style="width:5%"><!-- Catégorie -->
-  <col style="width:3%"><!-- État -->
-  <col style="width:2%"><!-- Status -->
-</colgroup>
+      <col style="width:6%">
+      <col style="width:8%">
+      <col style="width:10%">
+      <col style="width:7%">
+      <col style="width:7%">
+      <col style="width:12%">
+      <col style="width:16%">
+      <col style="width:18%">
+      <col style="width:6%">
+      <col style="width:5%">
+      <col style="width:3%">
+      <col style="width:2%">
+    </colgroup>
 
-<thead>
-  <tr>
-    <th>Reference</th>
-    <th>Marque</th>
-    <th>Nom</th>
-    <th>Prix</th>
-    <th>Promotion</th>
-    <th>Courte description</th>
-    <th class="col-description">Description</th>
-    <th>Images</th>
-    <th>Actions</th>
-    <th>Catégorie</th>
-    <th>État</th>
-    <th>Status</th>
-  </tr>
-</thead>
-
+    <thead>
+      <tr>
+        <th>Reference</th>
+        <th>Marque</th>
+        <th>Nom</th>
+        <th>Prix</th>
+        <th>Promotion</th>
+        <th>Courte description</th>
+        <th class="col-description">Description</th>
+        <th>Images</th>
+        <th>Actions</th>
+        <th>Catégorie</th>
+        <th>État</th>
+        <th>Status</th>
+      </tr>
+    </thead>
     <tbody id="montreTable"></tbody>
   </table>
 
   <!-- Modale Slider -->
-  <div id="modal">
-    <button class="close" onclick="closeModal()">✖</button>
-    <img id="modal-image" alt="">
+  <div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:1100; justify-content:center; align-items:center; flex-direction:column;">
+    <button class="close" onclick="closeModal()" style="position:absolute; top:10px; right:10px;">✖</button>
+    <img id="modal-image" alt="" style="max-width:100vw; max-height:100vh; margin-bottom:10px;">
     <div>
       <button onclick="prevImage()">⬅️</button>
       <button onclick="nextImage()">➡️</button>
     </div>
   </div>
 
-<!-- Modale d'édition d'image (dans le form edit) -->
-<div id="editImageModal" class="img-edit-modal" style="display:none;">
-  <div class="img-edit-modal-content">
-    <button class="close" onclick="closeEditImageModal()">✖</button>
-    <img id="editImageModalImg" alt="">
-    <div class="actions">
-      <button type="button" onclick="triggerReplace()">📁 Remplacer</button>
-      <button type="button" onclick="deleteCurrentSlot()">🗑️ Supprimer</button>
+  <!-- Mini-modale d'édition d'image -->
+  <div id="editImageModal" class="img-edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1001; align-items:center; justify-content:center;">
+    <div class="img-edit-modal-content" style="background:#fff; padding:12px; border-radius:8px; max-width:90vw; max-height:90vh; display:grid; gap:10px; grid-template-rows:auto 1fr auto; position:relative;">
+      <button class="close" onclick="closeEditImageModal()" style="position:absolute; top:12px; right:12px;">✖</button>
+      <img id="editImageModalImg" alt="" style="max-width:70vw; max-height:70vh; object-fit:contain;">
+      <div class="actions" style="display:flex; gap:10px; justify-content:center;">
+        <button type="button" onclick="triggerReplace()">📁 Remplacer</button>
+        <button type="button" onclick="deleteCurrentSlot()">🗑️ Supprimer</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Input caché pour choisir un fichier de remplacement -->
-<input type="file" id="replaceImageInput" accept="image/*" style="display:none">
+  <!-- Input caché pour remplacement ciblé -->
+  <input type="file" id="replaceImageInput" accept="image/*" style="display:none">
 
+  <!-- Modale Formulaire produit -->
+  <div id="formModal" style="display:none; position:fixed; inset:0; background:#000c; z-index:900; justify-content:center; align-items:center;">
+    <form id="formMontre" enctype="multipart/form-data" style="background:#222; padding:20px; color:#fff; max-width:540px; width:90%; border-radius:10px;">
+      <input type="hidden" name="id">
 
+      <label>Reference :
+        <input type="text" name="reference" required>
+      </label>
 
-  <!-- Modale Formulaire -->
-<!-- Modale Formulaire -->
-<div id="formModal">
-  <form id="formMontre" enctype="multipart/form-data">
-    <input type="hidden" name="id">
+      <label>Marque :
+        <div class="d-flex gap-2">
+          <select name="marque" id="brandSelect" required>
+            <option value="" selected disabled>— Choisir une marque —</option>
+          </select>
+          <button type="button" onclick="openBrandModal()">+ Ajouter</button>
+        </div>
+      </label>
 
-    <label>Reference :
-      <input type="text" name="reference" required>
-    </label>
+      <label>Nom :
+        <input type="text" name="nom" required>
+      </label>
 
-    <!-- 🏷️ Marque (select rempli par fetchBrands) -->
-    <label>Marque :
-      <div class="d-flex gap-2">
-        <select name="marque" id="brandSelect" class="form-select" required>
-          <option value="" selected disabled>— Choisir une marque —</option>
-          <!-- options injectées par JS -->
+      <label>Prix :
+        <input type="number" name="prix" required>
+      </label>
+
+      <label>Promotion :
+        <input type="number" name="promotion" placeholder="entrer le nouveau prix">
+      </label>
+
+      <label>Courte description :
+        <textarea name="short_description" rows="2" maxlength="160" placeholder="Résumé court (max 160)"></textarea>
+      </label>
+
+      <label>Description :
+        <textarea name="description" rows="3" required></textarea>
+      </label>
+
+      <label>Images :
+        <input type="file" name="images" accept="image/*" multiple>
+      </label>
+      <div id="imagesPreview" class="thumbs"></div>
+
+      <label>Catégorie :
+        <select name="categorie">
+          <option>Montres</option>
+          <option>Chaussures</option>
+          <option>Autres</option>
         </select>
-        <button type="button" class="btn btn-outline" onclick="openBrandModal()">+ Ajouter</button>
-      </div>
-      <small class="text-secondary">Sélectionne une marque existante ou crée-en une.</small>
-    </label>
+      </label>
 
-    <label>Nom :
-      <input type="text" name="nom" required>
-    </label>
+      <label>Etat :
+        <input type="text" name="etat" value="Neuf" required>
+      </label>
 
-    <label>Prix :
-      <input type="number" name="prix" required>
-    </label>
+      <label>Status :
+        <select name="status">
+          <option value="disponible">Disponible</option>
+          <option value="achat en cours">Achat en cours</option>
+          <option value="vendu">Vendu</option>
+        </select>
+      </label>
 
-    <label>Promotion :
-      <input type="number" name="promotion" placeholder="entrer le nouveau prix">
-    </label>
-
-    <label>Courte description :
-      <textarea name="short_description" rows="2" maxlength="160" placeholder="Résumé court (max 160)"></textarea>
-    </label>
-
-    <label>Description :
-      <textarea name="description" rows="3" required></textarea>
-    </label>
-
-    <label>Images :
-      <input type="file" name="images" accept="image/*" multiple>
-    </label>
-    <div id="imagesPreview" class="thumbs"></div>
-
-    <label>Catégorie :
-      <select name="categorie" class="form-select">
-        <option>Montres</option>
-        <option>Chaussures</option>
-        <option>Autres</option>
-      </select>
-    </label>
-
-    <label>Etat :
-      <input type="text" name="etat" value="Neuf" required>
-    </label>
-
-    <label>Status :
-      <select name="status" class="form-select">
-        <option value="disponible">Disponible</option>
-        <option value="achat en cours">Achat en cours</option>
-        <option value="vendu">Vendu</option>
-      </select>
-    </label>
-
-    <div class="d-flex gap-2 mt-2">
-      <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-      <button type="button" class="btn btn-outline" onclick="closeModalForm()">❌ Annuler</button>
-    </div>
-  </form>
-</div>
-
-  <div id="spinner"><div></div></div>
-
-  <!-- Modale Marques -->
-<div id="brandModal" class="img-edit-modal" style="display:none;">
-  <div class="img-edit-modal-content">
-    <button class="close" onclick="closeBrandModal()">✖</button>
-    <h3 style="margin:0">Nouvelle marque</h3>
-
-    <form id="formBrand">
-      <div class="mb-2">
-        <label>Nom de la marque</label>
-        <input type="text" name="brand_name" class="form-control" placeholder="Ex: Omega" required>
-      </div>
-
-      <div class="mb-2">
-        <label>Logo (PNG/JPG/WebP)</label>
-        <input type="file" id="brandLogoInput" class="form-control" accept="image/*">
-        <div id="brandLogoPreview" class="mt-2"></div>
-      </div>
-
-      <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary">Enregistrer</button>
-        <button type="button" class="btn btn-outline" onclick="closeBrandModal()">Annuler</button>
+      <div style="margin-top:10px; display:flex; gap:8px;">
+        <button type="submit">💾 Enregistrer</button>
+        <button type="button" onclick="closeModalForm()">❌ Annuler</button>
       </div>
     </form>
   </div>
-</div>
 
-  
+  <!-- Spinner -->
+  <div id="spinner" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:1200; justify-content:center; align-items:center;">
+    <div style="border:6px solid #FFD700; border-top:6px solid transparent; border-radius:50%; width:60px; height:60px; animation:spin 1s linear infinite;"></div>
+  </div>
+
+  <!-- Modale Marques -->
+  <div id="brandModal" class="img-edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1002; align-items:center; justify-content:center;">
+    <div class="img-edit-modal-content" style="background:#fff; padding:12px; border-radius:8px; max-width:520px; width:90%; display:grid; gap:10px; position:relative;">
+      <button class="close" onclick="closeBrandModal()" style="position:absolute; top:12px; right:12px;">✖</button>
+      <h3 style="margin:0">Nouvelle marque</h3>
+
+      <form id="formBrand">
+        <div class="mb-2">
+          <label>Nom de la marque</label>
+          <input type="text" name="brand_name" placeholder="Ex: Omega" required>
+        </div>
+
+        <div class="mb-2">
+          <label>Logo (PNG/JPG/WebP)</label>
+          <input type="file" id="brandLogoInput" accept="image/*">
+          <div id="brandLogoPreview" class="mt-2"></div>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button type="submit">Enregistrer</button>
+          <button type="button" onclick="closeBrandModal()">Annuler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 </body>
 </html>
