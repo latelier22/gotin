@@ -1,233 +1,279 @@
+// --- Config : CSV ou données locales ---
+const USE_LOCAL_DATA = false;   // false => lit data/montres.csv
+const CSV_PATH = 'data/montres.csv';
+const PLACEHOLDER_IMG = 'images/placeholder.jpg';
 
-const USE_LOCAL_DATA = false; // mettre false pour utiliser le CSV
-
-if (!USE_LOCAL_DATA) {
-  let montres = [];
-  // Exemple de données locales
-  }
+let montres = [];
 let currentMontreIndex = 0;
 let currentImageIndex = 0;
-
 let currentFilter = 'all';
 
+// Auto-rotation
 const AUTO_DELAY = 4000;
-let autoChange = true;        // tu as déjà cette variable
+let autoChange = true;
 let autoTimerId = null;
 
-// setInterval(() => {
-//   if (autoChange && montres.length > 1) {
-//     changeMontre(1);
-//   }
-// }, 4000); // 4000 ms = 4 secondes
-
-
-function startAutoRotate() {
-  stopAutoRotate();
-  autoTimerId = setInterval(() => {
-    if (autoChange && montres.length > 1) {
-      changeMontre(1, { fromAuto: true });
-    }
-  }, AUTO_DELAY);
+/* ========= Utils ========= */
+function escapeHtml(s=''){
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
-
-function stopAutoRotate() {
-  if (autoTimerId) {
-    clearInterval(autoTimerId);
-    autoTimerId = null;
-  }
-}
-
-function resetAutoRotate() {
-  startAutoRotate();
-}
-
-function changeMontre(direction, opts = {}) {
-  const fromAuto = !!opts.fromAuto;
-  let newIndex = (currentMontreIndex + direction + montres.length) % montres.length;
-  showMontre(newIndex);
-  if (!fromAuto) resetAutoRotate(); // manuel => on redémarre le compte à rebours
-}
-
-
-
-
-function showMontre(index) {
-  document.querySelector(`#montre-${currentMontreIndex}`)?.classList.remove('active');
-  currentMontreIndex = index;
-  document.querySelector(`#montre-${currentMontreIndex}`)?.classList.add('active');
-}
-
-function changeMontre(direction) {
-  let newIndex = (currentMontreIndex + direction + montres.length) % montres.length;
-  showMontre(newIndex);
-}
-
-function openModal(montreIndex, imageIndex) {
-  autoChange = false; 
-  currentMontreIndex = montreIndex;
-  currentImageIndex = imageIndex;
-  document.getElementById("modalImage").src = montres[montreIndex].images[imageIndex];
-  document.getElementById("imageModal").style.display = "flex";
-}
-
-function closeModal() {
-  document.getElementById("imageModal").style.display = "none";
-  autoChange = true;             // on relance l’auto
-  resetAutoRotate();
-}
-
-function nextImage() {
-  const imgs = montres[currentMontreIndex].images.length
-    ? montres[currentMontreIndex].images
-    : ['images/placeholder.jpg'];
-
-  currentImageIndex = (currentImageIndex + 1) % imgs.length;
-  document.getElementById("modalImage").src = imgs[currentImageIndex];
-}
-
-function prevImage() {
-  const imgs = montres[currentMontreIndex].images.length
-    ? montres[currentMontreIndex].images
-    : ['images/placeholder.jpg'];
-
-  currentImageIndex = (currentImageIndex - 1 + imgs.length) % imgs.length;
-  document.getElementById("modalImage").src = imgs[currentImageIndex];
-}
-
-
-// Fermer la modale si clic dehors
-window.onclick = function(event) {
-  const modal = document.getElementById("imageModal");
-  if (event.target === modal) closeModal();
-};
-
-if (USE_LOCAL_DATA) {
-  renderMontres(); // utilise la variable `montres` déjà définie dans data.js
-} else {
-  // Charger le CSV et générer le HTML
-  fetch('data/montres.csv')
-  .then(response => response.text())
-  .then(csvText => {
-    const data = Papa.parse(csvText, { header: true }).data;
-
-    montres = data
-      // on accepte les produits même si 0 image (on mettra un placeholder)
-      .map((row, index) => {
-        const images = [row.image1, row.image2, row.image3, row.image4].filter(Boolean);
-        return {
-          id: index,
-          nom: row.nom,
-          prix: row.prix,
-          promotion: row.promotion,
-          description: row.description,
-          reference: row.reference || '',
-          etat: row.etat || '',
-          status: row.status || '',
-          categorie: row.categorie || '',
-          images // 0..4 images
-        };
-      })
-      // si tu veux masquer les produits SANS image, dé-commente la ligne ci-dessous:
-      // .filter(m => m.images.length > 0)
-      ;
-
-    renderMontres();
-  });
-
-}
-
-function renderMontres() {
-  const container = document.getElementById("montres-container");
-  container.style.position = "relative";
-
-  const thumbs = document.getElementById("thumbnail-strip");
-  container.innerHTML = '';
-  thumbs.innerHTML = '';
-
-  const filtered = montres.filter(m => currentFilter === 'all' || m.categorie === currentFilter);
-
-  filtered.forEach((montre, index) => {
-    const imgs = montre.images.length ? montre.images : ['images/placeholder.jpg'];
-    const mainIdx = imgs[1] ? 1 : 0; // si on a ≥2 images on met la 2e en fond, sinon la 1re
-
-    // Affichage principal
-    const div = document.createElement("div");
-    div.className = "montre" + (index === 0 ? " active" : "");
-    div.id = `montre-${index}`;
-    div.innerHTML = `
-      <div class="main-display" style="background-image: url('${imgs[mainIdx]}');" onclick="openModal(${index}, ${mainIdx})">
-        ${hasPromo(montre) ? `<div class="ribbon"><span>PROMO</span></div>` : ''}
-        ${hasAchat(montre) ? `<div class="ribbon-left"><span>Achat en cours</span></div>` : ''}
-        ${hasVendu(montre) ? `<div class="ribbon-left"><span>VENDU</span></div>` : ''}
-        <div class="info">
-          <h1>${montre.nom || '—'}</h1>
-          <p><strong>Référence :</strong> ${montre.reference || '—'}</p>
-          <p><strong>Prix :</strong> ${priceHTML(montre)}</p>
-          <p><strong>Description :</strong> ${montre.description || '—'}</p>
-          <p><strong>État :</strong> ${montre.etat || '—'}</p>
-          <p><strong>Status :</strong> ${montre.status || '—'}</p>
-        </div>
-      </div>
-      <div class="gallery">
-        ${imgs
-          .map((src, i) => i === mainIdx ? '' : `<img src="${src}" onclick="openModal(${index}, ${i})">`)
-          .join('')}
-      </div>
-    `;
-    container.appendChild(div);
-
-    // Miniature de droite
-    const thumb = document.createElement("div");
-    thumb.className = "thumbnail";
-    thumb.innerHTML = `<img src="${imgs[mainIdx]}" alt="${montre.nom || ''}">`;
-    thumb.onclick = () => { showMontre(index); resetAutoRotate(); };
-
-    thumbs.appendChild(thumb);
-  });
-  startAutoRotate();
-}
-
-
-function filterMontres(categorie) {
-  currentFilter = categorie;
-  renderMontres();
-  resetAutoRotate();
-}
-
-
-
-
-
-
-
-
-function hasPromo(m) {
-  // true si promotion est un nombre > 0
+function hasPromo(m){
   const p = (m.promotion ?? "").toString().trim();
   if (p === "") return false;
   const n = Number(p);
   return Number.isFinite(n) && n > 0;
 }
-function hasVendu(m) {
-  // true si promotion est un nombre > 0
+function hasVendu(m){
   return (m.status ?? "").toLowerCase() === "vendu";
-  
 }
-function hasAchat(m) {
-  // true si promotion est un nombre > 0
+function hasAchat(m){
   return (m.status ?? "").toLowerCase() === "achat en cours";
-  
 }
-
-function priceHTML(m) {
+function brandBlock(m){
+  const name = (m.marque || '').trim();
+  const logo = (m.marque_logo || '').trim();
+  if (logo){
+    return `<div class="brand-badge" title="${escapeHtml(name || 'Marque')}">
+              <img src="${logo}" alt="${escapeHtml(name || 'Marque')}">
+            </div>`;
+  }
+  if (name){
+    return `<div class="brand-badge brand-text">${escapeHtml(name)}</div>`;
+  }
+  return '';
+}
+function priceBlock(m){
   const prix = Number(m.prix);
   const promo = Number(m.promotion);
-  if (hasPromo(m) && Number.isFinite(prix)) {
-    // prix barré + promo en gras
-    return `<span class="price-line"><span class="price-old">${prix} €</span><span class="price-new">${promo} €</span></span>`;
+  if (!Number.isFinite(prix) && !Number.isFinite(promo)) return '';
+  if (Number.isFinite(promo) && promo > 0 && Number.isFinite(prix)){
+    return `<div class="price-tag"><span class="price-old">${prix} €</span><span class="price-new">${promo} €</span></div>`;
   }
-  // pas de promo : juste le prix si dispo
-  return m.prix ? `<span class="price-line">${m.prix} €</span>` : "";
+  if (Number.isFinite(prix)){
+    return `<div class="price-tag">${prix} €</div>`;
+  }
+  return '';
 }
 
+/* ========= Auto-rotation ========= */
+function startAutoRotate(){
+  stopAutoRotate();
+  autoTimerId = setInterval(() => {
+    if (autoChange && montres.length > 1) changeMontre(1, { fromAuto: true });
+  }, AUTO_DELAY);
+}
+function stopAutoRotate(){ if (autoTimerId){ clearInterval(autoTimerId); autoTimerId = null; } }
+function resetAutoRotate(){ startAutoRotate(); }
 
+/* ========= Navigation produit ========= */
+function showMontre(index){
+  document.querySelector(`#montre-${currentMontreIndex}`)?.classList.remove('active');
+  currentMontreIndex = index;
+  document.querySelector(`#montre-${currentMontreIndex}`)?.classList.add('active');
+}
+function changeMontre(direction, opts = {}){
+  const fromAuto = !!opts.fromAuto;
+  const list = getFilteredMontres();
+  if (!list.length) return;
+  let newIndex = (currentMontreIndex + direction + list.length) % list.length;
+  showMontre(newIndex);
+  if (!fromAuto) resetAutoRotate();
+}
+
+/* ========= Modale ========= */
+function openModal(montreIndex, imageIndex){
+  autoChange = false;
+  currentMontreIndex = montreIndex;
+  currentImageIndex = imageIndex;
+  const list = getFilteredMontres();
+  const imgs = list[montreIndex].images.length ? list[montreIndex].images : [PLACEHOLDER_IMG];
+  document.getElementById("modalImage").src = imgs[imageIndex];
+  document.getElementById("imageModal").style.display = "flex";
+}
+function closeModal(){
+  document.getElementById("imageModal").style.display = "none";
+  autoChange = true;
+  resetAutoRotate();
+}
+function nextImage(){
+  const list = getFilteredMontres();
+  const imgs = list[currentMontreIndex].images.length ? list[currentMontreIndex].images : [PLACEHOLDER_IMG];
+  currentImageIndex = (currentImageIndex + 1) % imgs.length;
+  document.getElementById("modalImage").src = imgs[currentImageIndex];
+}
+function prevImage(){
+  const list = getFilteredMontres();
+  const imgs = list[currentMontreIndex].images.length ? list[currentMontreIndex].images : [PLACEHOLDER_IMG];
+  currentImageIndex = (currentImageIndex - 1 + imgs.length) % imgs.length;
+  document.getElementById("modalImage").src = imgs[currentImageIndex];
+}
+window.onclick = function(ev){
+  const modal = document.getElementById("imageModal");
+  if (ev.target === modal) closeModal();
+};
+
+/* ========= Filtre ========= */
+function filterMontres(categorie){
+  currentFilter = categorie;
+  renderMontres();
+  resetAutoRotate();
+}
+function getFilteredMontres(){
+  return montres.filter(m => currentFilter === 'all' || m.categorie === currentFilter);
+}
+
+/* ========= En savoir plus ========= */
+function toggleMore(idx){
+  const el = document.getElementById(`more-${idx}`);
+  if (!el) return;
+  el.hidden = !el.hidden;
+}
+
+/* ========= Rendu ========= */
+function renderMontres(){
+  const container = document.getElementById("montres-container");
+  const thumbs = document.getElementById("thumbnail-strip");
+  container.style.position = "relative";
+  container.innerHTML = '';
+  thumbs.innerHTML = '';
+
+  const filtered = getFilteredMontres();
+  if (!filtered.length){
+    container.innerHTML = `<p style="text-align:center;margin:40px 0;">Aucun produit.</p>`;
+    return;
+  }
+
+  filtered.forEach((montre, index) => {
+    const imgs = montre.images.length ? montre.images : [PLACEHOLDER_IMG];
+    const mainIdx = imgs[1] ? 1 : 0;
+
+    const div = document.createElement("div");
+    div.className = "montre" + (index === 0 ? " active" : "");
+    div.id = `montre-${index}`;
+
+    const ribbons = `
+      ${hasPromo(montre) ? `<div class="ribbon"><span>PROMO</span></div>` : ''}
+      ${hasAchat(montre) ? `<div class="ribbon-left"><span>Achat en cours</span></div>` : ''}
+      ${hasVendu(montre) ? `<div class="ribbon-left"><span>VENDU</span></div>` : ''}
+    `;
+
+    const brandHtml = brandBlock(montre);
+    const priceHtml = priceBlock(montre);
+
+  div.innerHTML = `
+  <div class="main-display" style="background-image:url('${imgs[mainIdx]}');" onclick="openModal(${index}, ${mainIdx})">
+    ${ribbons}
+
+    <!-- Infos haut gauche -->
+    <div class="info" onclick="event.stopPropagation()">
+      <p class="ref"><strong>Réf :</strong> ${escapeHtml(montre.reference || '—')} / <span class="status"> <strong>(ETAT: ${escapeHtml(montre.etat || '')})</span> </strong>  </p> 
+      <h1 class="prod-name">${escapeHtml(montre.nom || '—')}</h1>
+      <p class="short_desc">${escapeHtml(montre.short_description || '—')}</p>
+      <button class="btn-more" onclick="toggleMore(${index}); event.stopPropagation();">En savoir plus</button>
+    </div> 
+
+    <!-- Coin bas gauche : Marque -->
+    <div class="corner-bottom-left" onclick="event.stopPropagation()">
+      ${brandHtml}
+    </div>
+
+    <!-- Coin bas droite : Prix -->
+    <div class="corner-bottom-right" onclick="event.stopPropagation()">
+      ${priceHtml}
+    </div>
+
+    <!-- Panneau “en savoir plus” (DANS main-display) -->
+    <div class="more-panel" id="more-${index}" hidden onclick="event.stopPropagation()">
+      <div class="more-panel__inner">
+        <div class="desc-html"></div>
+        <div class="meta">
+          <p><strong>État :</strong> ${escapeHtml(montre.etat || '—')}</p>
+          <p><strong>Status :</strong> ${escapeHtml(montre.status || '—')}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Miniatures -->
+  <div class="gallery">
+    ${imgs.map((src, i) => i === mainIdx ? '' : `<img src="${src}" alt="" onclick="openModal(${index}, ${i})">`).join('')}
+  </div>
+`;
+
+
+    container.appendChild(div);
+
+    // Sanitize + injecte le HTML CKEditor
+const rawDesc = montre.description || '';
+const safeDesc = DOMPurify.sanitize(rawDesc, {
+  ALLOWED_TAGS: ['p','h1','h2','h3','strong','em','u','span','div','br',
+                 'ul','ol','li','a','table','thead','tbody','tr','th','td','img'],
+  ALLOWED_ATTR: ['href','target','rel','style','colspan','rowspan','src','alt']
+});
+div.querySelector('.desc-html').innerHTML = safeDesc || '—';
+
+
+    // Miniature droite
+    const thumb = document.createElement("div");
+    thumb.className = "thumbnail";
+    thumb.innerHTML = `<img src="${imgs[mainIdx]}" alt="${escapeHtml(montre.nom || '')}">`;
+    thumb.onclick = () => { showMontre(index); resetAutoRotate(); };
+    thumbs.appendChild(thumb);
+  });
+
+  // au premier rendu / rerendu, repart l’auto
+  startAutoRotate();
+}
+
+/* ========= Chargement ========= */
+function loadFromCSV(){
+  fetch(CSV_PATH)
+    .then(r => r.text())
+    .then(csvText => {
+      const data = Papa.parse(csvText, { header: true }).data;
+
+      montres = data.map((row, index) => {
+        const images = [row.image2, row.image1, row.image3, row.image4].filter(Boolean);
+        return {
+          id: index,
+          nom: row.nom,
+          marque: row.marque || '',
+          marque_logo: row.marque_logo || '',
+          prix: row.prix,
+          promotion: row.promotion,
+          short_description: row.short_description || '',
+          description: row.description,
+          reference: row.reference || '',
+          etat: row.etat || '',
+          status: row.status || '',
+          categorie: row.categorie || '',
+          images
+        };
+      });
+
+      renderMontres();
+    })
+    .catch(err => {
+      console.error(err);
+      montres = [];
+      renderMontres();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (USE_LOCAL_DATA){
+    // montres = [ ... ] // si tu veux tester en local sans CSV
+    renderMontres();
+  } else {
+    loadFromCSV();
+  }
+});
+
+/* ========= Expose global (HTML inline) ========= */
+window.filterMontres = filterMontres;
+window.changeMontre  = changeMontre;
+window.openModal     = openModal;
+window.closeModal    = closeModal;
+window.nextImage     = nextImage;
+window.prevImage     = prevImage;
+window.toggleMore    = toggleMore;

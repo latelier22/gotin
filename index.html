@@ -1,19 +1,25 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Les Montres de Gotin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- Police + Styles -->
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/style.css">
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
+  <!-- PapaParse pour lire data/montres.csv -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <!-- Script principal -->
   <script src="js/script.js" defer></script>
 </head>
 
 <body>
   <div class="container">
     <h1>Les Montres de Gotin</h1>
+
     <div class="main-layout">
       <!-- COLONNE GAUCHE : Filtres -->
       <div class="left-panel">
@@ -29,6 +35,7 @@
       <!-- COLONNE CENTRALE : Produit -->
       <div class="center-panel">
         <div id="montres-container"></div>
+
         <div class="navigation">
           <button onclick="changeMontre(-1)">⟵ Précédente</button>
           <button onclick="changeMontre(1)">Suivante ⟶</button>
@@ -42,7 +49,7 @@
       </div>
     </div>
 
-    <!-- Modale -->
+    <!-- Modale Images -->
     <div class="modal" id="imageModal">
       <div class="modal-content">
         <span class="close" onclick="closeModal()">✖</span>

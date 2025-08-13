@@ -23,6 +23,9 @@
   <!-- ZIP (optionnel) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.1.0/jszip-utils.min.js"></script>
+  <!-- <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script> -->
+  <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+
 </head>
 
 <body>
@@ -104,8 +107,10 @@
   <input type="file" id="replaceImageInput" accept="image/*" style="display:none">
 
   <!-- Modale Formulaire produit -->
-  <div id="formModal" style="display:none; position:fixed; inset:0; background:#000c; z-index:900; justify-content:center; align-items:center;">
-    <form id="formMontre" enctype="multipart/form-data" style="background:#222; padding:20px; color:#fff; max-width:540px; width:90%; border-radius:10px;">
+<!-- Modale Formulaire produit -->
+<div id="formModal" style="display:none; position:fixed; inset:0; background:#000c; z-index:900; justify-content:center; align-items:center;">
+  <div class="modal-sheet">
+    <form id="formMontre" enctype="multipart/form-data" style="background:#222; padding:20px; color:#fff; width:100%; border-radius:10px;">
       <input type="hidden" name="id">
 
       <label>Reference :
@@ -137,9 +142,8 @@
         <textarea name="short_description" rows="2" maxlength="160" placeholder="Résumé court (max 160)"></textarea>
       </label>
 
-      <label>Description :
-        <textarea name="description" rows="3" required></textarea>
-      </label>
+      <label for="description">Description longue :</label>
+      <textarea id="description" name="description" rows="10"></textarea>
 
       <label>Images :
         <input type="file" name="images" accept="image/*" multiple>
@@ -172,6 +176,7 @@
       </div>
     </form>
   </div>
+</div>
 
   <!-- Spinner -->
   <div id="spinner" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:1200; justify-content:center; align-items:center;">
@@ -222,5 +227,54 @@
 
 
   <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+
+<style>
+  /* Force le texte en NOIR dans l’éditeur uniquement */
+  .ck-editor__editable,
+  .ck-content {
+    background: #fff !important;  /* si tu veux fond blanc */
+    color: #000 !important;        /* texte noir */
+  }
+
+  /* (Optionnel) titres & listes bien visibles */
+  .ck-content h1, .ck-content h2, .ck-content h3,
+  .ck-content h4, .ck-content h5, .ck-content h6,
+  .ck-content p,  .ck-content ul, .ck-content ol {
+    color: #000 !important;
+  }
+
+  /* (Optionnel) placeholder plus lisible */
+  .ck-placeholder {
+    color: #666 !important;
+  }
+</style>
+
+ <script>
+let __ck = null;                 // <- instance accessible partout
+let __ckReady = null;            // <- promesse de dispo
+
+ClassicEditor.create(document.querySelector('#description'), {
+  toolbar: [
+    'undo','redo','|',
+    'heading','|',
+    'bold','italic','underline','|',
+    'bulletedList','numberedList','outdent','indent','|',
+    'link','insertTable'
+  ]
+}).then(editor => {
+  __ck = editor;
+  __ckReady = Promise.resolve(editor);
+
+  // Très important : au submit on renvoie le HTML dans le textarea
+  const form = document.getElementById('formMontre');
+  if (form) {
+    form.addEventListener('submit', () => {
+      document.getElementById('description').value = editor.getData();
+    });
+  }
+}).catch(console.error);
+</script>
+
 </body>
 </html>

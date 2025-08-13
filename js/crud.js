@@ -242,42 +242,55 @@ function renderPreview(){
 }
 
 // ---------- Form produit ----------
-function openAddModal(){
+async function openAddModal(){
   editing = false;
-  const form = $id("formMontre"); if (!form) return;
-  form.reset(); form.id.value = "";
-  // select marques à jour
+  const form = document.getElementById("formMontre");
+  form.reset();
+  form.id.value = "";
   if (typeof populateBrandSelect === 'function') populateBrandSelect();
+
+  // images
   for (let i=0;i<4;i++) editSlots[i] = { src:null, file:null, deleted:false };
   renderPreview();
-  $id("formModal").style.display = "flex";
+
+  // vider l’éditeur
+  const ed = __ck || (__ckReady && await __ckReady);
+  if (ed) ed.setData('');               // <- CLÉ
+  document.getElementById("formModal").style.display = "flex";
 }
 
-function openEditModal(index){
+async function openEditModal(index){
   editing = true;
-  const m = montres[index], form = $id("formMontre"); if (!form) return;
+  const m = montres[index];
+  const form = document.getElementById("formMontre");
 
-  // select marques (pré-sélection)
   if (typeof populateBrandSelect === 'function') populateBrandSelect(m.marque || '');
 
-  form.id.value          = m.id;
-  form.reference.value   = m.reference || "";
-  form.marque.value      = m.marque || "";
-  form.nom.value         = m.nom || "";
-  form.prix.value        = m.prix || "";
-  form.promotion.value   = m.promotion || "";
-  form.short_description.value = m.short_description || "";
-  form.description.value = m.description || "";
-  form.categorie.value   = m.categorie || "Montres";
-  form.etat.value        = m.etat || "Neuf";
-  form.status.value      = m.status || "disponible";
+  // Remplir les champs "classiques"
+  form.id.value                = m.id ?? "";
+  form.reference.value         = m.reference ?? "";
+  form.marque.value            = m.marque ?? "";
+  form.nom.value               = m.nom ?? "";
+  form.prix.value              = m.prix ?? "";
+  form.promotion.value         = m.promotion ?? "";
+  form.short_description.value = m.short_description ?? "";
+  form.categorie.value         = m.categorie ?? "Montres";
+  form.etat.value              = m.etat ?? "Neuf";
+  form.status.value            = m.status ?? "disponible";
 
+  // NE PAS toucher form.description.value ici
+  // Injecter le HTML dans CKEditor :
+  const ed = __ck || (__ckReady && await __ckReady);
+  if (ed) ed.setData(m.description || '');   // <- CLÉ
+
+  // images
   const urls = [m.image1, m.image2, m.image3, m.image4];
   for (let i=0;i<4;i++) editSlots[i] = { src: urls[i] || null, file:null, deleted:false };
-
   renderPreview();
-  $id("formModal").style.display = "flex";
+
+  document.getElementById("formModal").style.display = "flex";
 }
+
 
 function closeModalForm(){ const fm=$id("formModal"); if(fm) fm.style.display="none"; }
 
@@ -386,21 +399,52 @@ async function downloadZip(){ /* ... si besoin ... */ }
 function downloadProduitsCSV(){ /* ... si besoin ... */ }
 function sendSQLiteDataToServer(){
   if (!montres.length){ alert("Aucune donnée à envoyer !"); return; }
-  const headers = ["id","reference","nom","prix","promotion","description","image1","image2","image3","image4","categorie","etat","status"];
-  const rows = montres.map((m,i)=> headers.map(h=>{
-    const v = h==="id" ? i : (m[h] || "");
-    const s = typeof v==="string" ? v : (typeof v==="number" ? String(v) : JSON.stringify(v));
-    return `"${s.replace(/"/g,'""')}"`;
-  }).join(","));
+
+  // Ajout de marque_logo + short_description
+  const headers = [
+    "id","reference","nom",
+    "marque","marque_logo",
+    "prix","promotion",
+    "short_description","description",
+    "image1","image2","image3","image4",
+    "categorie","etat","status"
+  ];
+
+  const rows = montres.map((m, i) => {
+    // Essaie de trouver le logo de la marque si non présent dans l’objet produit
+    const inferredLogo =
+      (m.marque_logo && m.marque_logo.trim()) ||
+      (window.brandIndex && m.marque && window.brandIndex[m.marque]?.logo) ||
+      m.logo || ""; // fallback éventuel
+
+    // On crée un objet “plat” qui contient les champs à exporter
+    const out = {
+      ...m,
+      id: (m.id ?? i),
+      marque_logo: inferredLogo,
+      short_description: (m.short_description ?? ""),
+    };
+
+    return headers.map(h => {
+      const v = (out[h] ?? "");
+      const s = (typeof v === "string") ? v
+              : (typeof v === "number") ? String(v)
+              : JSON.stringify(v);
+      return `"${s.replace(/"/g,'""')}"`;
+    }).join(",");
+  });
+
   const csv = [headers.join(","), ...rows].join("\n");
-  const blob = new Blob([csv], {type:'text/csv'});
+  const blob = new Blob([csv], { type:'text/csv' });
+
   const formData = new FormData();
   formData.append("csvFile", blob, "montres.csv");
+
   showSpinner();
-  fetch("upload.php", { method:"POST", body:formData })
-    .then(r=>r.text())
-    .then(msg=>{ hideSpinner(); alert("✅ CSV mis à jour sur le serveur :\n"+msg); })
-    .catch(err=>{ hideSpinner(); alert("❌ Erreur : "+err.message); });
+  fetch("upload.php", { method:"POST", body: formData })
+    .then(r => r.text())
+    .then(msg => { hideSpinner(); alert("✅ CSV mis à jour sur le serveur :\n" + msg); })
+    .catch(err => { hideSpinner(); alert("❌ Erreur : " + err.message); });
 }
 
 // ---------- Bootstrap ----------
@@ -425,6 +469,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   await fetchBrands();
   await fetchMontres();
 });
+
+
+
+
+
 
 // expose pour HTML inline
 window.filterCategory = filterCategory;
