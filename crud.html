@@ -7,9 +7,11 @@
 
   <!-- Styles: tout-en-un pour être autonome -->
   <link rel="stylesheet" href="styles/crud.css">
-
+  
+  <script src="js/marque.js" defer></script>
+  <script src="js/crud.js" defer></script>
  <!-- dans <head> -->
-<script src="js/crud.js" defer></script>
+
 
 
   <!-- Librairies ZIP (optionnelles si tu utilises downloadZip) -->
@@ -24,13 +26,14 @@
   <h1>Gestion des produits</h1>
 
   <div>
-    <button onclick="window.open('https://docs.google.com/spreadsheets/d/1RImwBSEucX0d6chHduucER-GVvM_nzlSFmvAjlQnScg/edit?usp=sharing', '_blank')">GoogleSheet</button>
-    <button onclick="downloadZip()">Télécharger ZIP</button>
+    <!-- <button onclick="window.open('https://docs.google.com/spreadsheets/d/1RImwBSEucX0d6chHduucER-GVvM_nzlSFmvAjlQnScg/edit?usp=sharing', '_blank')">GoogleSheet</button> -->
+    <!-- <button onclick="downloadZip()">Télécharger ZIP</button> -->
     <button onclick="window.location.href='index.html'">🏠 Voir les produits</button>
+    <button onclick="openBrandModal()">🏷️ Marques</button>
     <button onclick="openAddModal()">➕ Ajouter un produit</button>
-    <button onclick="downloadProduitsCSV()">📄 Créer produits.csv</button>
+    <!-- <button onclick="downloadProduitsCSV()">📄 Créer produits.csv</button> -->
     <button onclick="sendSQLiteDataToServer()">📤 Envoyer données vers serveur</button>
-    <button onclick="window.location.href='creerZip.php'">📄 Créer Zip pour tablette</button>
+    <!-- <button onclick="window.location.href='creerZip.php'">📄 Créer Zip pour tablette</button> -->
   </div>
 
   <div id="filters" style="margin-bottom: 12px;">
@@ -43,32 +46,37 @@
   <table>
     <!-- Largeurs fixes (total = 100%) pour éviter tout espace vide -->
     <colgroup>
-      <col style="width:8%"><!-- Reference -->
-      <col style="width:10%"><!-- Nom -->
-      <col style="width:8%"><!-- Prix -->
-      <col style="width:8%"><!-- Promotion -->
-      <col style="width:22%"><!-- Description -->
-      <col style="width:28%"><!-- Images -->
-      <col style="width:6%"><!-- Actions -->
-      <col style="width:5%"><!-- Catégorie -->
-      <col style="width:3%"><!-- État -->
-      <col style="width:2%"><!-- Status -->
-    </colgroup>
+  <col style="width:6%"><!-- Reference -->
+  <col style="width:8%"><!-- Marque -->
+  <col style="width:10%"><!-- Nom -->
+  <col style="width:7%"><!-- Prix -->
+  <col style="width:7%"><!-- Promotion -->
+  <col style="width:12%"><!-- Courte description -->
+  <col style="width:16%"><!-- Description -->
+  <col style="width:18%"><!-- Images -->
+  <col style="width:6%"><!-- Actions -->
+  <col style="width:5%"><!-- Catégorie -->
+  <col style="width:3%"><!-- État -->
+  <col style="width:2%"><!-- Status -->
+</colgroup>
 
-    <thead>
-      <tr>
-        <th>Reference</th>
-        <th>Nom</th>
-        <th>Prix</th>
-        <th>Promotion</th>
-        <th class="col-description">Description</th>
-        <th>Images</th>
-        <th>Actions</th>
-        <th>Catégorie</th>
-        <th>État</th>
-        <th>Status</th>
-      </tr>
-    </thead>
+<thead>
+  <tr>
+    <th>Reference</th>
+    <th>Marque</th>
+    <th>Nom</th>
+    <th>Prix</th>
+    <th>Promotion</th>
+    <th>Courte description</th>
+    <th class="col-description">Description</th>
+    <th>Images</th>
+    <th>Actions</th>
+    <th>Catégorie</th>
+    <th>État</th>
+    <th>Status</th>
+  </tr>
+</thead>
+
     <tbody id="montreTable"></tbody>
   </table>
 
@@ -100,42 +108,106 @@
 
 
   <!-- Modale Formulaire -->
-  <div id="formModal">
-    <form id="formMontre" enctype="multipart/form-data">
-      <input type="hidden" name="id">
-      <label>Reference : <input type="text" name="reference" required></label>
-      <label>Nom : <input type="text" name="nom" required></label>
-      <label>Prix : <input type="number" name="prix" required></label>
-      <label>Promotion : <input type="number" name="promotion" placeholder="entrer le nouveau prix"></label>
-      <label>Description : <textarea name="description" rows="3" required></textarea></label>
-      <label>Images : 
-        <input type="file" name="images" accept="image/*" multiple>
-      </label>
-      <div id="imagesPreview" class="thumbs"></div>
+<!-- Modale Formulaire -->
+<div id="formModal">
+  <form id="formMontre" enctype="multipart/form-data">
+    <input type="hidden" name="id">
 
-      <label>Catégorie :
-        <select name="categorie">
-          <option>Montres</option>
-          <option>Chaussures</option>
-          <option>Autres</option>
+    <label>Reference :
+      <input type="text" name="reference" required>
+    </label>
+
+    <!-- 🏷️ Marque (select rempli par fetchBrands) -->
+    <label>Marque :
+      <div class="d-flex gap-2">
+        <select name="marque" id="brandSelect" class="form-select" required>
+          <option value="" selected disabled>— Choisir une marque —</option>
+          <!-- options injectées par JS -->
         </select>
-      </label>
-      <label>Etat : <input type="text" name="etat" value="Neuf" required></label>
-      <label>Status :
-        <select name="status">
-          <option value="disponible">Disponible</option>
-          <option value="achat en cours">Achat en cours</option>
-          <option value="vendu">Vendu</option>
-        </select>
-      </label>
-      <div style="margin-top:10px">
-        <button type="submit">💾 Enregistrer</button>
-        <button type="button" onclick="closeModalForm()">❌ Annuler</button>
+        <button type="button" class="btn btn-outline" onclick="openBrandModal()">+ Ajouter</button>
+      </div>
+      <small class="text-secondary">Sélectionne une marque existante ou crée-en une.</small>
+    </label>
+
+    <label>Nom :
+      <input type="text" name="nom" required>
+    </label>
+
+    <label>Prix :
+      <input type="number" name="prix" required>
+    </label>
+
+    <label>Promotion :
+      <input type="number" name="promotion" placeholder="entrer le nouveau prix">
+    </label>
+
+    <label>Courte description :
+      <textarea name="short_description" rows="2" maxlength="160" placeholder="Résumé court (max 160)"></textarea>
+    </label>
+
+    <label>Description :
+      <textarea name="description" rows="3" required></textarea>
+    </label>
+
+    <label>Images :
+      <input type="file" name="images" accept="image/*" multiple>
+    </label>
+    <div id="imagesPreview" class="thumbs"></div>
+
+    <label>Catégorie :
+      <select name="categorie" class="form-select">
+        <option>Montres</option>
+        <option>Chaussures</option>
+        <option>Autres</option>
+      </select>
+    </label>
+
+    <label>Etat :
+      <input type="text" name="etat" value="Neuf" required>
+    </label>
+
+    <label>Status :
+      <select name="status" class="form-select">
+        <option value="disponible">Disponible</option>
+        <option value="achat en cours">Achat en cours</option>
+        <option value="vendu">Vendu</option>
+      </select>
+    </label>
+
+    <div class="d-flex gap-2 mt-2">
+      <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+      <button type="button" class="btn btn-outline" onclick="closeModalForm()">❌ Annuler</button>
+    </div>
+  </form>
+</div>
+
+  <div id="spinner"><div></div></div>
+
+  <!-- Modale Marques -->
+<div id="brandModal" class="img-edit-modal" style="display:none;">
+  <div class="img-edit-modal-content">
+    <button class="close" onclick="closeBrandModal()">✖</button>
+    <h3 style="margin:0">Nouvelle marque</h3>
+
+    <form id="formBrand">
+      <div class="mb-2">
+        <label>Nom de la marque</label>
+        <input type="text" name="brand_name" class="form-control" placeholder="Ex: Omega" required>
+      </div>
+
+      <div class="mb-2">
+        <label>Logo (PNG/JPG/WebP)</label>
+        <input type="file" id="brandLogoInput" class="form-control" accept="image/*">
+        <div id="brandLogoPreview" class="mt-2"></div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <button type="button" class="btn btn-outline" onclick="closeBrandModal()">Annuler</button>
       </div>
     </form>
   </div>
-
-  <div id="spinner"><div></div></div>
+</div>
 
   
 </body>

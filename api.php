@@ -35,12 +35,14 @@ if ($action === 'list') {
 
 // === ACTION: ADD ===
 if ($action === 'add') {
-   $stmt = $db->prepare("INSERT INTO montres (nom, prix, promotion, description, image1, image2, image3, image4, categorie, reference, etat, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)");
+   $stmt = $db->prepare("INSERT INTO montres (nom, marque, prix, promotion, short_description, description, image1, image2, image3, image4, categorie, reference, etat, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)");
 $stmt->execute([
     $data['nom'] ?? '',
+    $data['marque'] ?? '',
     $data['prix'] ?? 0,
     $data['promotion'] ?? '',
+    $data['short_description'] ?? '',
     $data['description'] ?? '',
     $data['image1'] ?? '',
     $data['image2'] ?? '',
@@ -64,11 +66,13 @@ if ($action === 'edit') {
         echo json_encode(['error' => 'ID requis']);
         exit;
     }
-    $stmt = $db->prepare("UPDATE montres SET nom=?, prix=?, promotion=?, description=?, image1=?, image2=?, image3=?, image4=?, categorie=?, reference=?, etat=?, status=? WHERE id=?");
+    $stmt = $db->prepare("UPDATE montres SET nom=?, marque=?, prix=?, promotion=?, short_description=?,description=?, image1=?, image2=?, image3=?, image4=?, categorie=?, reference=?, etat=?, status=? WHERE id=?");
 $stmt->execute([
     $data['nom'] ?? '',
+    $data['marque'] ?? '',
     $data['prix'] ?? 0,
     $data['promotion'] ?? '',
+    $data['short_description'] ?? '',
     $data['description'] ?? '',
     $data['image1'] ?? '',
     $data['image2'] ?? '',
@@ -99,6 +103,26 @@ if ($action === 'delete') {
     echo json_encode(['message' => 'Supprimé', 'id' => (int)$id]);
     exit;
 }
+
+
+// api.php (extrait)
+if ($_GET['action'] === 'list_brands') {
+  $rows = $db->query("SELECT id, name, logo FROM marques ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+  header('Content-Type: application/json');
+  echo json_encode($rows);
+  exit;
+}
+
+if ($_POST['action'] === 'add_brand') {
+  $name = trim($_POST['name'] ?? '');
+  $logo = trim($_POST['logo'] ?? '');
+  if ($name === '') { http_response_code(400); echo "name required"; exit; }
+  $stmt = $db->prepare("INSERT INTO marques (name, logo) VALUES (?, ?)");
+  $stmt->execute([$name, $logo]);
+  echo "OK";
+  exit;
+}
+
 
 // === ACTION inconnue ===
 echo json_encode(['error' => 'Action inconnue']);

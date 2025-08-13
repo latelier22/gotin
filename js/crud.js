@@ -129,24 +129,73 @@ async function fetchMontres() {
 }
 
 function displayMontres() {
-  const tbody = $id("montreTable");
+  const tbody = document.getElementById("montreTable");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const list = currentCategory==="All" ? montres : montres.filter(m => m.categorie===currentCategory);
+  const list = currentCategory === "All" ? montres : montres.filter(m => m.categorie === currentCategory);
+
+  // util: ne touche pas au chemin si déjà absolu
+  const normLogo = (s) => {
+    if (!s) return "";
+    if (/^(https?:)?\/\//.test(s) || s.startsWith("data:") || s.startsWith("/")) return s;
+    return s; // on suppose que l'API/brandIndex fournit un chemin correct (ex: images/omega.png)
+  };
 
   list.forEach((m, index) => {
     const tr = document.createElement("tr");
 
-    const tdRef = document.createElement("td"); tdRef.textContent = m.reference || "";
-    const tdNom = document.createElement("td"); tdNom.textContent = m.nom || "";
+    // 1) Reference
+    const tdRef = document.createElement("td");
+    tdRef.textContent = m.reference || "";
 
+    // 2) Marque (logo + nom) — PAS DE BADGE LETTRE
+    const tdMarque = document.createElement("td");
+    const brandWrap = document.createElement("div");
+    brandWrap.className = "brand-cell";
+
+    const brandNameText = (m.marque || "").trim();
+    const brand = (window.brandIndex && brandNameText) ? window.brandIndex[brandNameText] : null;
+    const logoSrc = normLogo((brand && brand.logo) || m.marque_logo || m.logo || m.brand_logo || "");
+
+    if (logoSrc) {
+      const img = document.createElement("img");
+      img.className = "brand-logo";
+      img.alt = brandNameText ? `Logo ${brandNameText}` : "Logo marque";
+      img.src = logoSrc;
+      img.onerror = () => { img.remove(); /* on ne met rien d'autre */ };
+      brandWrap.appendChild(img);
+    }
+    const brandName = document.createElement("span");
+    brandName.className = "brand-name";
+    brandName.textContent = brandNameText;
+    brandWrap.appendChild(brandName);
+
+    tdMarque.appendChild(brandWrap);
+
+    // 3) Nom
+    const tdNom = document.createElement("td");
+    tdNom.textContent = m.nom || "";
+
+    // 4) Prix
     const tdPrix = document.createElement("td");
     if (m.prix) tdPrix.innerHTML = m.promotion ? `<s>${m.prix} €</s>` : `${m.prix} €`;
 
+    // 5) Promotion
     const tdPromo = document.createElement("td");
     tdPromo.textContent = m.promotion ? `${m.promotion} €` : "";
 
+    // 6) Courte description
+    const tdShort = document.createElement("td");
+    tdShort.className = "col-description";
+    const shortDiv = document.createElement("div");
+    shortDiv.className = "desc-content";
+    shortDiv.textContent = (m.short_description && m.short_description.trim())
+      ? m.short_description.trim()
+      : (m.description || "");
+    tdShort.appendChild(shortDiv);
+
+    // 7) Description
     const tdDesc = document.createElement("td");
     tdDesc.className = "col-description";
     const descDiv = document.createElement("div");
@@ -154,6 +203,7 @@ function displayMontres() {
     descDiv.textContent = m.description || "";
     tdDesc.appendChild(descDiv);
 
+    // 8) Images
     const tdImgs = document.createElement("td");
     const thumbs = document.createElement("div"); thumbs.className = "thumbs";
     const imgs = [m.image1, m.image2, m.image3, m.image4].filter(Boolean);
@@ -165,21 +215,27 @@ function displayMontres() {
     });
     tdImgs.appendChild(thumbs);
 
+    // 9) Actions
     const tdActions = document.createElement("td");
-    const bEdit = document.createElement("button"); bEdit.title="Éditer"; bEdit.textContent="📝";
+    const bEdit = document.createElement("button"); bEdit.title = "Éditer"; bEdit.textContent = "📝";
     bEdit.addEventListener("click", () => openEditModal(index));
-    const bDel  = document.createElement("button"); bDel.title="Supprimer"; bDel.textContent="🗑️";
+    const bDel  = document.createElement("button"); bDel.title = "Supprimer"; bDel.textContent = "🗑️";
     bDel.addEventListener("click", () => deleteMontre(m.id));
     tdActions.appendChild(bEdit); tdActions.appendChild(bDel);
 
+    // 10) Catégorie
     const tdCat = document.createElement("td"); tdCat.textContent = m.categorie || "";
-    const tdEtat= document.createElement("td"); tdEtat.textContent = m.etat || "";
-    const tdStat= document.createElement("td"); tdStat.textContent = m.status || "";
+    // 11) État
+    const tdEtat = document.createElement("td"); tdEtat.textContent = m.etat || "";
+    // 12) Status
+    const tdStat = document.createElement("td"); tdStat.textContent = m.status || "";
 
-    tr.append(tdRef, tdNom, tdPrix, tdPromo, tdDesc, tdImgs, tdActions, tdCat, tdEtat, tdStat);
+    // ORDRE exact (12 colonnes)
+    tr.append(tdRef, tdMarque, tdNom, tdPrix, tdPromo, tdShort, tdDesc, tdImgs, tdActions, tdCat, tdEtat, tdStat);
     tbody.appendChild(tr);
   });
 }
+
 
 function filterCategory(cat){ currentCategory = cat; displayMontres(); }
 
@@ -505,6 +561,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const eim=$id('editImageModal'); if(eim) eim.style.zIndex=1001;
   const sm=$id('modal'); if(sm) sm.style.zIndex=1100;
 
+  
+  fetchBrands(); // charge les marques (si besoin)
   fetchMontres();
 });
 
