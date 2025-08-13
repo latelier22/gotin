@@ -20,27 +20,36 @@
 <link rel="icon" type="image/png" href="images/logo-site2.png">
 
 <body>
-  <div class="container">
-    <div class="site-title" style="display: flex; align-items: center;">
-      <img src="images/logo-site2.png" alt="Logo du site" class="logo" style="height: 48px; margin-right: 12px; background: #fff; border-radius: 100%;" />
-      <h1 style="margin: 0;">Le fouineur...</h1>
-    </div>
+  <div class="container"> 
+    <div class="site-title" style="position: relative; width: 100%; display: flex; align-items: center;">
+  
+  <!-- Bloc gauche : logo + titre -->
+  <div style="display: flex; align-items: center;">
+    <img src="images/logo-site2.png" 
+         alt="Logo du site" 
+         class="logo" 
+         style="height: 48px; margin-right: 12px; background: #fff; border-radius: 100%; " />
+    <h1 style="margin: 0;">Le fouineur...</h1>
+  </div>
+
+  <!-- Catégorie active centrée dans la fenêtre -->
+  <span id="active-category" 
+        style="position: absolute; left: 50%; transform: translateX(-50%); font-size: 2em; font-weight: 500; text-align: center;">
+  </span>
+</div>
+
 
     <div class="main-layout">
       <!-- COLONNE GAUCHE : Filtres -->
       <div class="left-panel">
-
-        
         <h2>Catégories</h2>
         <div id="filters" class="filters">
-         
         </div>
       </div>
 
       <!-- COLONNE CENTRALE : Produit -->
       <div class="center-panel">
         <div id="montres-container"></div>
-
         <div class="navigation">
           <button onclick="changeMontre(-1)">⟵ Précédente</button>
           <button onclick="changeMontre(1)">Suivante ⟶</button>

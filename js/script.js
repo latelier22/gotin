@@ -3,14 +3,25 @@ const USE_LOCAL_DATA = false;   // false => lit data/montres.csv
 const CSV_PATH = 'data/montres.csv';
 const PLACEHOLDER_IMG = 'images/placeholder.jpg';
 
+let currentFilter = 'all'; // valeur par défaut
+
+
+function updateActiveCategoryTitle() {
+  const el = document.getElementById('active-category');
+  if (!el) return;
+  el.textContent = (currentFilter === 'all') ? 'Toutes les catégories' : currentFilter;
+}
+
 
 
 function euroToCfa(euro){
   const rate = 655.96;
   const n = Number(euro);
   if (!Number.isFinite(n)) return 0;
-  return Math.round(n * rate);
+  const cfa = Math.round(n * rate);
+  return Math.round(cfa / 1000) * 1000;
 }
+
 
 function cfaToEuro(cfa){
   const rate = 655.96;
@@ -22,7 +33,7 @@ let montres = [];
 
 let currentMontreIndex = 0;
 let currentImageIndex = 0;
-let currentFilter = 'all';
+
 
 // Auto-rotation
 const AUTO_DELAY = 4000;
@@ -131,9 +142,12 @@ window.onclick = function(ev){
 /* ========= Filtre ========= */
 function filterMontres(categorie){
   currentFilter = categorie;
+  currentMontreIndex = 0; // repart à 0
+  updateActiveCategoryTitle();
   renderMontres();
   resetAutoRotate();
 }
+
 function getFilteredMontres(){
   return montres.filter(m => currentFilter === 'all' || m.categorie === currentFilter);
 }
@@ -300,6 +314,7 @@ function loadFromCSV(){
         };
       });
       buildCategoryFilters();
+      updateActiveCategoryTitle();
       renderMontres();
     })
     .catch(err => {
@@ -309,28 +324,41 @@ function loadFromCSV(){
     });
 }
 
-
 function buildCategoryFilters(){
   const wrap = document.getElementById('filters');
   if (!wrap) return;
 
-  // Compte les produits par catégorie
+  const titleEl = document.querySelector('.left-panel h2');
+
+  // Comptage par catégorie (trim + fallback Autres)
   const counts = montres.reduce((acc, m) => {
     const c = (m.categorie || '').trim() || 'Autres';
     acc[c] = (acc[c] || 0) + 1;
     return acc;
   }, {});
 
-  // Ordre désiré + filtrage des vides
+  // Catégories non vides
+  const nonEmptyCats = Object.keys(counts).filter(c => counts[c] > 0);
+
+  // Si seulement 1 catégorie non vide -> masquer tout le menu
+  if (nonEmptyCats.length === 1) {
+    wrap.innerHTML = '';
+    wrap.style.display = 'none';
+    if (titleEl) titleEl.style.display = 'none';
+    return;
+  }
+
+  // Sinon afficher et construire le menu
+  wrap.style.display = '';
+  if (titleEl) titleEl.style.display = '';
+
+  // Ordre prioritaire + autres catégories triées
   const order = ['Montres','Chaussures','Autres'];
-  const cats  = order.filter(c => counts[c] > 0);
+  const others = nonEmptyCats.filter(c => !order.includes(c)).sort();
+  const cats = [...order.filter(c => nonEmptyCats.includes(c)), ...others];
 
   const btn = (label, key) => `<button onclick="filterMontres('${key}')">${label}</button>`;
 
-
-  console.log('Catégories disponibles :', cats, ' (total produits :', montres.length, ')');
-  console
-  // "Tous" seulement si au moins 1 produit
   wrap.innerHTML = [
     montres.length ? btn('Tous','all') : '',
     ...cats.map(c => btn(c, c))
@@ -345,7 +373,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (USE_LOCAL_DATA){
     // montres = [ ... ] // si tu veux tester en local sans CSV
     buildCategoryFilters();
+    updateActiveCategoryTitle();
     renderMontres();
+
   } else {
    
     loadFromCSV();
