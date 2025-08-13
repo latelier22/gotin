@@ -299,7 +299,7 @@ function loadFromCSV(){
           images
         };
       });
-
+      buildCategoryFilters();
       renderMontres();
     })
     .catch(err => {
@@ -309,11 +309,45 @@ function loadFromCSV(){
     });
 }
 
+
+function buildCategoryFilters(){
+  const wrap = document.getElementById('filters');
+  if (!wrap) return;
+
+  // Compte les produits par catégorie
+  const counts = montres.reduce((acc, m) => {
+    const c = (m.categorie || '').trim() || 'Autres';
+    acc[c] = (acc[c] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Ordre désiré + filtrage des vides
+  const order = ['Montres','Chaussures','Autres'];
+  const cats  = order.filter(c => counts[c] > 0);
+
+  const btn = (label, key) => `<button onclick="filterMontres('${key}')">${label}</button>`;
+
+
+  console.log('Catégories disponibles :', cats, ' (total produits :', montres.length, ')');
+  console
+  // "Tous" seulement si au moins 1 produit
+  wrap.innerHTML = [
+    montres.length ? btn('Tous','all') : '',
+    ...cats.map(c => btn(c, c))
+  ].join('');
+}
+
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
+  
   if (USE_LOCAL_DATA){
     // montres = [ ... ] // si tu veux tester en local sans CSV
+    buildCategoryFilters();
     renderMontres();
   } else {
+   
     loadFromCSV();
   }
 });
