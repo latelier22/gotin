@@ -3,7 +3,23 @@ const USE_LOCAL_DATA = false;   // false => lit data/montres.csv
 const CSV_PATH = 'data/montres.csv';
 const PLACEHOLDER_IMG = 'images/placeholder.jpg';
 
+
+
+function euroToCfa(euro){
+  const rate = 655.96;
+  const n = Number(euro);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(n * rate);
+}
+
+function cfaToEuro(cfa){
+  const rate = 655.96;
+  const n = Number(cfa);
+  if (!Number.isFinite(n)) return 0;
+  return +(n / rate).toFixed(2);
+}
 let montres = [];
+
 let currentMontreIndex = 0;
 let currentImageIndex = 0;
 let currentFilter = 'all';
@@ -168,7 +184,7 @@ function renderMontres(){
     <div class="info" onclick="event.stopPropagation()">
       <p class="ref"><strong>Réf :</strong> ${escapeHtml(montre.reference || '—')} / <span class="status"> <strong>(ETAT: ${escapeHtml(montre.etat || '')})</span> </strong>  </p> 
       <h1 class="prod-name">${escapeHtml(montre.nom || '—')}</h1>
-      <p class="short_desc">${escapeHtml(montre.short_description || '—')}</p>
+      <p class="short_desc"><em>${escapeHtml(montre.short_description || '—')}</em></p>
       <button class="btn-more" onclick="toggleMore(${index}); event.stopPropagation();">En savoir plus</button>
     </div> 
 
@@ -177,10 +193,41 @@ function renderMontres(){
       ${brandHtml}
     </div>
 
-    <!-- Coin bas droite : Prix -->
+    <!-- Coin bas droite : Prix en colonnes -->
     <div class="corner-bottom-right" onclick="event.stopPropagation()">
-      ${montre.prix_conseille ? `<span class="price-conseille">Prix conseillé : ${escapeHtml(montre.prix_conseille)} €</span>` : ''}
-      ${priceHtml}
+      <div class="price-columns">
+        ${montre.prix_conseille ? `
+          
+          <div class="price-col price-tag" style="text-align:right; font-style:italic;">
+            <span class="label">Prix conseillé</span>
+            <span class="value">${escapeHtml(montre.prix_conseille)} €</span>
+          </div>
+        ` : ''}
+        ${montre.promotion && Number(montre.promotion) > 0 ? `
+          <div class="price-col price-promo">
+            <span class="value">
+              <div class="price-tag">
+              <span class="label">Prix promo</span>
+                <span class="price-old">${escapeHtml(montre.prix)} €</span>
+                <span class="price-new">${escapeHtml(montre.promotion)} €</span>
+                <br>
+                <span class="price-new cfa" style="display:block; text-align:right;">${euroToCfa(montre.promotion)} CFA</span>
+              </div>
+            </span>
+          </div>
+        ` : montre.prix ? `
+          <div class="price-col price-main">
+            <span class="value">
+              <div class="price-tag">
+              <span class="label">Prix de vente</span>
+                ${escapeHtml(montre.prix)} €
+                <br>
+                <span class="price-new cfa" style="display:block; text-align:right;">${euroToCfa(montre.prix)} CFA</span>
+              </div>
+            </span>
+          </div>
+        ` : ''}
+      </div>
     </div>
 
     <!-- Panneau “en savoir plus” (DANS main-display) -->

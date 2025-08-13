@@ -131,6 +131,8 @@ body {
 .corner-bottom-right{
   position:absolute; right:14px; bottom:14px; z-index:3;
   display:flex; align-items: center; justify-content: space-between;
+  /* border:#D4AF37 1px solid; border-radius:10px; padding:8px 12px;
+  background:rgba(0,0,0,.65); box-shadow:0 2px 8px rgba(212,175,55,.35); */
 }
 
 /* Badge marque : logo OU texte */
@@ -151,6 +153,10 @@ body {
 }
 .price-tag .price-old{ text-decoration:line-through; opacity:.7; margin-right:.35em; }
 .price-tag .price-new{ font-weight:800; }
+
+.cfa{
+ color: #fff  !important; 
+}
 
 /* Galerie */
 .gallery { display:flex; margin-top:15px; margin-bottom:30px; gap:10px; }
