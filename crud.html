@@ -39,11 +39,16 @@
     <button onclick="sendSQLiteDataToServer()">📤 Envoyer données vers serveur</button>
   </div>
 
+  <div id="filters-container" style="display: flex; align-items: center; gap: 8px;"></div>
   <div id="filters" style="margin-bottom: 12px;">
     <button onclick="filterCategory('All')">📦 Tous</button>
     <button onclick="filterCategory('Montres')">⌚ Montres</button>
     <button onclick="filterCategory('Chaussures')">👟 Chaussures</button>
     <button onclick="filterCategory('Autres')">📁 Autres</button>
+  </div>
+  <button id="toggle-active-btn" data-mode="all" style="margin-left: auto;">
+    Afficher : Tous
+  </button>
   </div>
 
   <table>
@@ -58,8 +63,9 @@
       <col style="width:12%">
       <col style="width:16%">
       <col style="width:18%">
-      <col style="width:6%">
-      <col style="width:5%">
+      <col style="width:4%">
+      <col style="width:3%">
+      <col style="width:3%">
       <col style="width:3%">
       <col style="width:2%">
     </colgroup>
@@ -75,6 +81,7 @@
         <th>Courte description</th>
         <th class="col-description">Description</th>
         <th>Images</th>
+        <th>Actif</th>
         <th>Actions</th>
         <th>Catégorie</th>
         <th>État</th>
@@ -176,6 +183,11 @@
           <option value="vendu">Vendu</option>
         </select>
       </label>
+
+      <label>
+        <input type="checkbox" name="active" checked>
+        Actif (visible)
+      </label>  
 
       <div style="margin-top:10px; display:flex; gap:8px;">
         <button type="submit">💾 Enregistrer</button>

@@ -46,25 +46,32 @@ function json_fail($msg, $code = 400) {
 switch ($action) {
 
 case 'list': {
-    // joint aussi le logo de la marque
-    $stmt = $db->query("
+    $activeOnly = isset($_GET['active_only']) ? (int)$_GET['active_only'] : 1;
+
+    $sql = "
         SELECT m.*,
                ma.logo AS marque_logo
         FROM montres m
         LEFT JOIN marques ma ON ma.name = m.marque
-        ORDER BY m.id ASC
-    ");
+    ";
+    if ($activeOnly) {
+        $sql .= " WHERE COALESCE(m.active,1) = 1 ";
+    }
+    $sql .= " ORDER BY m.id ASC";
+
+    $stmt = $db->query($sql);
     $montres = $stmt->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode($montres, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+
 case 'add': {
     $stmt = $db->prepare("
         INSERT INTO montres
-          (nom, marque, prix,prix_conseille, promotion, short_description, description,
-           image1, image2, image3, image4, categorie, reference, etat, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (nom, marque, prix, prix_conseille, promotion, short_description, description,
+           image1, image2, image3, image4, categorie, reference, etat, status, active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([
         $data['nom'] ?? '',
@@ -81,7 +88,8 @@ case 'add': {
         $data['categorie'] ?? '',
         $data['reference'] ?? '',
         $data['etat'] ?? 'neuf',
-        $data['status'] ?? 'disponible'
+        $data['status'] ?? 'disponible',
+        isset($data['active']) ? (int)$data['active'] : 1
     ]);
     echo json_encode(['message' => 'Ajouté', 'id' => (int)$db->lastInsertId()], JSON_UNESCAPED_UNICODE);
     exit;
@@ -92,9 +100,9 @@ case 'edit': {
 
     $stmt = $db->prepare("
         UPDATE montres
-           SET nom=?, marque=?, prix=?,prix_conseille=?, promotion=?, short_description=?, description=?,
+           SET nom=?, marque=?, prix=?, prix_conseille=?, promotion=?, short_description=?, description=?,
                image1=?, image2=?, image3=?, image4=?,
-               categorie=?, reference=?, etat=?, status=?
+               categorie=?, reference=?, etat=?, status=?, active=?
          WHERE id=?
     ");
     $stmt->execute([
@@ -113,11 +121,13 @@ case 'edit': {
         $data['reference'] ?? '',
         $data['etat'] ?? 'neuf',
         $data['status'] ?? 'disponible',
+        isset($data['active']) ? (int)$data['active'] : 1,
         $data['id']
     ]);
     echo json_encode(['message' => 'Modifié', 'id' => (int)$data['id']], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
 
 case 'delete': {
     $id = $_GET['id'] ?? $_POST['id'] ?? $data['id'] ?? null;
@@ -128,6 +138,40 @@ case 'delete': {
     echo json_encode(['message' => 'Supprimé', 'id' => (int)$id], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+
+case 'set_active': {
+    $id = (int)($data['id'] ?? $_POST['id'] ?? 0);
+
+    // Normalise 'active' si fourni (accepte "1","0","true","false","on","off")
+    $activeRaw = $data['active'] ?? $_POST['active'] ?? null;
+    $active = null;
+    if ($activeRaw !== null) {
+        $val = is_string($activeRaw) ? strtolower(trim($activeRaw)) : $activeRaw;
+        if ($val === 'true' || $val === 'on')  $active = 1;
+        else if ($val === 'false' || $val === 'off') $active = 0;
+        else $active = (int)$val;
+    }
+
+    if ($id < 0) json_fail("Paramètres invalides.");
+
+    if ($active === null) {
+        // Pas de valeur fournie -> toggle
+        $sel = $db->prepare("SELECT COALESCE(active,1) as active FROM montres WHERE id=?");
+        $sel->execute([$id]);
+        $row = $sel->fetch(PDO::FETCH_ASSOC);
+        if (!$row) json_fail("Produit introuvable.", 404);
+        $active = ((int)$row['active'] === 1) ? 0 : 1;
+    }
+
+    $stmt = $db->prepare("UPDATE montres SET active=? WHERE id=?");
+    $stmt->execute([$active, $id]);
+
+    echo json_encode(['ok' => true, 'id' => $id, 'active' => (int)$active], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+
 
 // ===================================================================
 //                           MARQUES (marques)

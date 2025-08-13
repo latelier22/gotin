@@ -13,6 +13,9 @@ let editing = false;
 let currentImages = [];
 let currentIndex = 0;
 
+
+let activeFilterMode = 'active';
+
 // Edition d'images par slot
 let editSlots = [
   { src: null, file: null, deleted: false },
@@ -65,13 +68,20 @@ async function prepareFile(originalFile,{maxW=1600,maxH=1600,targetMB=2,quality=
 async function fetchMontres() {
   showSpinner();
   try {
-    const res = await fetch(API_URL + "?action=list");
+    let url = API_URL + "?action=list";
+    url += (activeFilterMode === 'active') ? "&active_only=1" : "&active_only=0";
+
+    const res = await fetch(url);
     montres = await res.json();
-    displayMontres();
+    displayMontres(); // garde le filtrage par catégorie côté client
   } catch(e) {
-    console.error(e); alert("Erreur de chargement des produits.");
-  } finally { hideSpinner(); }
+    console.error(e);
+    alert("Erreur de chargement des produits.");
+  } finally {
+    hideSpinner();
+  }
 }
+
 
 // Affichage tableau (avec logo de marque via brandIndex)
 function displayMontres() {
@@ -175,6 +185,21 @@ tdPrixConseille.textContent =
     });
     tdImgs.appendChild(thumbs);
 
+
+    // Colonne Actif
+const tdActive = document.createElement("td");
+const isActive = (String(m.active ?? '1') === '1');
+tdActive.innerHTML = isActive ? '✅' : '🚫';
+
+// Bouton toggle
+const btnToggle = document.createElement("button");
+btnToggle.title = isActive ? "Rendre inactif" : "Rendre actif";
+btnToggle.textContent = isActive ? "Désactiver" : "Activer";
+btnToggle.addEventListener("click", () => toggleActive(m.id, isActive ? 0 : 1));
+tdActive.appendChild(document.createElement("br"));
+tdActive.appendChild(btnToggle);
+
+
     // 9) Actions
     const tdActions = document.createElement("td");
     const bEdit = document.createElement("button"); bEdit.title="Éditer"; bEdit.textContent="📝";
@@ -188,7 +213,7 @@ tdPrixConseille.textContent =
     const tdEtat= document.createElement("td"); tdEtat.textContent = m.etat || "";
     const tdStat= document.createElement("td"); tdStat.textContent = m.status || "";
 
-    tr.append(tdRef, tdMarque, tdNom, tdPrixConseille, tdPrix, tdPromo, tdShort, tdDesc, tdImgs, tdActions, tdCat, tdEtat, tdStat);
+    tr.append(tdRef, tdMarque, tdNom, tdPrixConseille, tdPrix, tdPromo, tdShort, tdDesc, tdImgs, tdActive,  tdActions, tdCat, tdEtat, tdStat);
     tbody.appendChild(tr);
   });
 }
@@ -250,20 +275,28 @@ function renderPreview(){
 }
 
 // ---------- Form produit ----------
+// ---------- Form produit ----------
 async function openAddModal(){
   editing = false;
   const form = document.getElementById("formMontre");
+  if (!form) return;
+
   form.reset();
   form.id.value = "";
+
+  // Active par défaut = true (si la checkbox existe)
+  if (form.active) form.active.checked = true;
+
   if (typeof populateBrandSelect === 'function') populateBrandSelect();
 
   // images
-  for (let i=0;i<4;i++) editSlots[i] = { src:null, file:null, deleted:false };
+  for (let i = 0; i < 4; i++) editSlots[i] = { src: null, file: null, deleted: false };
   renderPreview();
 
   // vider l’éditeur
   const ed = __ck || (__ckReady && await __ckReady);
-  if (ed) ed.setData('');               // <- CLÉ
+  if (ed) ed.setData('');
+
   document.getElementById("formModal").style.display = "flex";
 }
 
@@ -271,6 +304,7 @@ async function openEditModal(index){
   editing = true;
   const m = montres[index];
   const form = document.getElementById("formMontre");
+  if (!form || !m) return;
 
   if (typeof populateBrandSelect === 'function') populateBrandSelect(m.marque || '');
 
@@ -287,18 +321,30 @@ async function openEditModal(index){
   form.etat.value              = m.etat ?? "Neuf";
   form.status.value            = m.status ?? "disponible";
 
-  // NE PAS toucher form.description.value ici
-  // Injecter le HTML dans CKEditor :
+  // Champ "active" (accepte 1/0/true/false/"1"/"0"/"true"/"false")
+  if (form.active) {
+    const v = m.active;
+    const isActive =
+      v === 1 || v === true ||
+      (typeof v === 'string' && (v === '1' || v.toLowerCase() === 'true'));
+    // Par défaut, si undefined -> true
+    form.active.checked = (v === undefined ? true : !!isActive);
+  }
+
+  // Injecter le HTML dans CKEditor (NE PAS toucher form.description.value)
   const ed = __ck || (__ckReady && await __ckReady);
-  if (ed) ed.setData(m.description || '');   // <- CLÉ
+  if (ed) ed.setData(m.description || '');
 
   // images
   const urls = [m.image1, m.image2, m.image3, m.image4];
-  for (let i=0;i<4;i++) editSlots[i] = { src: urls[i] || null, file:null, deleted:false };
+  for (let i = 0; i < 4; i++) {
+    editSlots[i] = { src: urls[i] || null, file: null, deleted: false };
+  }
   renderPreview();
 
   document.getElementById("formModal").style.display = "flex";
 }
+
 
 
 function closeModalForm(){ const fm=$id("formModal"); if(fm) fm.style.display="none"; }
@@ -376,6 +422,7 @@ async function onFormSubmit(e){
   dataForm.set("image4", imagePaths[3]);
   dataForm.set("action", editing ? "edit" : "add");
   dataForm.set("promotion", form.promotion.value ? String(parseFloat(form.promotion.value)) : "");
+  dataForm.set("active", form.active?.checked ? "1" : "0");
 
   showSpinner();
   try {
@@ -474,15 +521,41 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   $id('replaceImageInput')?.addEventListener('change', onReplaceInputChange);
 
+  // --- Bouton "Actifs / Tous"
+const toggleBtn = $id('toggle-active-btn');
+if (toggleBtn) {
+  // libellé initial
+  toggleBtn.textContent = (activeFilterMode === 'active') ? 'Afficher : Actifs' : 'Afficher : Tous';
+
+  toggleBtn.addEventListener('click', () => {
+    activeFilterMode = (activeFilterMode === 'all') ? 'active' : 'all';
+    toggleBtn.textContent = (activeFilterMode === 'active') ? 'Afficher : Actifs' : 'Afficher : Tous';
+    fetchMontres(); // recharge la liste en respectant Actifs/Tous
+  });
+}
+
+
   // 1) charge les marques (construit brandIndex) puis 2) charge les produits
   await fetchBrands();
   await fetchMontres();
 });
 
 
-
-
-
+async function toggleActive(id, newValue){
+  try{
+    const fd = new FormData();
+    fd.append("action", "set_active");
+    fd.append("id", String(id));
+    fd.append("active", String(newValue));
+    const r = await fetch(API_URL, { method:"POST", body: fd });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await fetchMontres(); // rafraîchit la liste
+  }catch(e){
+    console.error(e);
+    alert("Erreur lors du changement d'état actif/inactif.");
+  }
+}
+window.toggleActive = toggleActive;
 
 // expose pour HTML inline
 window.filterCategory = filterCategory;
