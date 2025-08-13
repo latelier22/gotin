@@ -60,7 +60,7 @@ $html = <<<HTML
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Les Montres de Gotin</title>
+  <title>Le fouineur...</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/style.css">
   <script src="js/data.js"></script>
@@ -68,7 +68,7 @@ $html = <<<HTML
 </head>
 <body>
   <div class="container">
-    <h1 style="text-align:center; font-size:2.5em; margin-bottom:30px; color:#FFD700; letter-spacing:2px; text-shadow:1px 1px 8px #000;">Les Montres de Gotin</h1>
+    <h1 style="text-align:center; font-size:2.5em; margin-bottom:30px; color:#FFD700; letter-spacing:2px; text-shadow:1px 1px 8px #000;">Le fouineur...</h1>
     <div class="container">
       <div id="montres-container"></div>
       <div class="thumbnail-strip" id="thumbnail-strip"></div>

@@ -129,6 +129,14 @@ function displayMontres() {
     const tdNom = document.createElement("td");
     tdNom.textContent = m.nom || "";
 
+    // 4) Prix conseillé
+const tdPrixConseille = document.createElement("td");
+tdPrixConseille.textContent =
+  (m.prix_conseille !== undefined && m.prix_conseille !== null && m.prix_conseille !== "")
+    ? `${m.prix_conseille} €`
+    : "";
+
+
     // 4) Prix
     const tdPrix = document.createElement("td");
     if (m.prix) tdPrix.innerHTML = m.promotion ? `<s>${m.prix} €</s>` : `${m.prix} €`;
@@ -180,7 +188,7 @@ function displayMontres() {
     const tdEtat= document.createElement("td"); tdEtat.textContent = m.etat || "";
     const tdStat= document.createElement("td"); tdStat.textContent = m.status || "";
 
-    tr.append(tdRef, tdMarque, tdNom, tdPrix, tdPromo, tdShort, tdDesc, tdImgs, tdActions, tdCat, tdEtat, tdStat);
+    tr.append(tdRef, tdMarque, tdNom, tdPrixConseille, tdPrix, tdPromo, tdShort, tdDesc, tdImgs, tdActions, tdCat, tdEtat, tdStat);
     tbody.appendChild(tr);
   });
 }
@@ -272,6 +280,7 @@ async function openEditModal(index){
   form.marque.value            = m.marque ?? "";
   form.nom.value               = m.nom ?? "";
   form.prix.value              = m.prix ?? "";
+  form.prix_conseille.value    = m.prix_conseille ?? "";
   form.promotion.value         = m.promotion ?? "";
   form.short_description.value = m.short_description ?? "";
   form.categorie.value         = m.categorie ?? "Montres";
@@ -407,7 +416,7 @@ function sendSQLiteDataToServer(){
     "prix","promotion",
     "short_description","description",
     "image1","image2","image3","image4",
-    "categorie","etat","status"
+    "categorie","etat","status", "prix_conseille"
   ];
 
   const rows = montres.map((m, i) => {

@@ -179,6 +179,7 @@ function renderMontres(){
 
     <!-- Coin bas droite : Prix -->
     <div class="corner-bottom-right" onclick="event.stopPropagation()">
+      ${montre.prix_conseille ? `<span class="price-conseille">Prix conseillé : ${escapeHtml(montre.prix_conseille)} €</span>` : ''}
       ${priceHtml}
     </div>
 
@@ -247,6 +248,7 @@ function loadFromCSV(){
           etat: row.etat || '',
           status: row.status || '',
           categorie: row.categorie || '',
+          prix_conseille: row.prix_conseille || '',
           images
         };
       });

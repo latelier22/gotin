@@ -62,14 +62,15 @@ case 'list': {
 case 'add': {
     $stmt = $db->prepare("
         INSERT INTO montres
-          (nom, marque, prix, promotion, short_description, description,
+          (nom, marque, prix,prix_conseille, promotion, short_description, description,
            image1, image2, image3, image4, categorie, reference, etat, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([
         $data['nom'] ?? '',
         $data['marque'] ?? '',
         $data['prix'] ?? 0,
+        $data['prix_conseille'] ?? 0,
         $data['promotion'] ?? '',
         $data['short_description'] ?? '',
         $data['description'] ?? '',
@@ -91,7 +92,7 @@ case 'edit': {
 
     $stmt = $db->prepare("
         UPDATE montres
-           SET nom=?, marque=?, prix=?, promotion=?, short_description=?, description=?,
+           SET nom=?, marque=?, prix=?,prix_conseille=?, promotion=?, short_description=?, description=?,
                image1=?, image2=?, image3=?, image4=?,
                categorie=?, reference=?, etat=?, status=?
          WHERE id=?
@@ -100,6 +101,7 @@ case 'edit': {
         $data['nom'] ?? '',
         $data['marque'] ?? '',
         $data['prix'] ?? 0,
+        $data['prix_conseille'] ?? 0,
         $data['promotion'] ?? '',
         $data['short_description'] ?? '',
         $data['description'] ?? '',
