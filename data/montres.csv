@@ -1,10 +1,10 @@
 id,reference,nom,prix,promotion,description,image1,image2,image3,image4,categorie,etat,status
-"0","ZEN01","Montre Zenith Elite","8500","7000","Titane, automatique, cuir italien","images/montre1-1.avif","images/montre1-2.avif","images/montre1-3.avif","images/montre1-4.avif","Montres","Neuf","disponible"
+"0","ZEN01","Montre Zenith Elite","8500","7000","Titane, automatique, cuir italien","images/montre1-1.avif","images/montre1-2.avif","images/montre1-3.avif","","Montres","Neuf","disponible"
 "1","ZEN02","Rolex Submariner","12000","8000","Acier, lunette céramique, étanche 300 m","images/montre2-4.avif","images/montre2-2.avif","images/montre2-3.avif","images/montre2-4.avif","Montres","Neuf","vendu"
 "2","fgdfg","Breitling Superocean!","6000","","Heritage B20 Automatic 42","images/montre3-1.avif","images/montre3-2.avif","images/montre3-3.avif","images/montre3-4.avif","Montres","Neuf","achat en cours"
 "3","CHAU03","Richelieu en alligator brun foncé pour homme","8000","","La beauté du design et l’équilibre des formes définissent le style de ce richelieu Santoni. Un modèle impeccable pour les occasions les plus habillées, confectionné à la main par nos maîtres-artisans dans un magnifique cuir d’alligator. Il se caractérise par une silhouette sophistiquée et essentielle avec une seule couture sur le contrefort.
 
 
-","images/CHAU03-under.webp","images/CHAU03-full.webp","images/CHAU03-top.webp","images/CHAU03-full.webp","Chaussures","Neuf","disponible"
-"4","CHAU04","vbnvbn","2000","","dqsdqsdq","images/montre2-4.avif","","","","Montres","Neuf","disponible"
-"5","ZEN22","dfgdfg","500","","ggfdghdfgh","images/montre1-1.avif","images/montre1-3.avif","","","Montres","Neuf","disponible"
+","images/CHAU03-full.webp","images/CHAU03-top.webp","images/chau03-side-1754829462814-my14sb.webp","images/montre1-1.avif","Chaussures","Neuf","disponible"
+"4","ZEN021","hfgh","120","60","dfgdfgdg","images/montre2-2-1754829490542-9rck41.jpg","images/montre1-3.avif","images/montre2-4-1754912875415-rg1w99.jpg","images/montre2-4-1754912880886-5sz8ro.jpg","Montres","Neuf","disponible"
+"5","vxcv","xcv","120","","ghfgh","images/montre2-1-1754829522633-xt4g2x.jpg","images/montre3-1-1754829522717-mqm3zw.jpg","images/chau03-under-1754829522739-8yu5by.webp","images/montre1-2-1754829522832-cf4pzi.jpg","Montres","Neuf","disponible"
