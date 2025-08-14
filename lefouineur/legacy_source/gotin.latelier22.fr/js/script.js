@@ -51,14 +51,9 @@ function hasPromo(m){
   return Number.isFinite(n) && n > 0;
 }
 function hasVendu(m){
-  const status = (m.status ?? "").toLowerCase();
-  if (status === "vendu") return true;
-  if (Number(m.stock_qty) <= 0) return true;
-  return false;
+  return (m.status ?? "").toLowerCase() === "vendu";
 }
 function hasAchat(m){
-  // Si stock = 0, on ne met pas "achat en cours" (on aura mis "vendu")
-  if (Number(m.stock_qty) <= 0) return false;
   return (m.status ?? "").toLowerCase() === "achat en cours";
 }
 function brandBlock(m){
@@ -195,30 +190,17 @@ function renderMontres(){
     const brandHtml = brandBlock(montre);
     const priceHtml = priceBlock(montre);
 
-  // Format id to 3 digits with leading zeros
-  const formattedId = String(montre.id).padStart(3, '0');
-
   div.innerHTML = `
   <div class="main-display" style="background-image:url('${imgs[mainIdx]}');" onclick="openModal(${index}, ${mainIdx})">
     ${ribbons}
 
-
-    
-   <!-- Infos haut gauche -->
-<div class="info" onclick="event.stopPropagation()">
-  <div class="ref-line">
-    <p class="ref">
-      <strong style="font-weight:bold;">REF</strong><span style="font-weight:bold;">${formattedId}-</span>${escapeHtml(montre.reference)}</p>
-    <p class="etat">
-      <strong>${escapeHtml(montre.etat || 'NEUF')}</strong>
-    </p>
-  </div>
-  
-  <h1 class="prod-name">${escapeHtml(montre.nom || '—')}</h1>
-  <p class="short_desc"><em>${escapeHtml(montre.short_description || '—')}</em></p>
-  <button class="btn-more" onclick="toggleMore(${index}); event.stopPropagation();">En savoir plus</button>
-</div>
-
+    <!-- Infos haut gauche -->
+    <div class="info" onclick="event.stopPropagation()">
+      <p class="ref"><strong>Réf :</strong> ${escapeHtml(montre.reference || '—')} / <span class="status"> <strong>(ETAT: ${escapeHtml(montre.etat || '')})</span> </strong>  </p> 
+      <h1 class="prod-name">${escapeHtml(montre.nom || '—')}</h1>
+      <p class="short_desc"><em>${escapeHtml(montre.short_description || '—')}</em></p>
+      <button class="btn-more" onclick="toggleMore(${index}); event.stopPropagation();">En savoir plus</button>
+    </div> 
 
     <!-- Coin bas gauche : Marque -->
     <div class="corner-bottom-left" onclick="event.stopPropagation()">
@@ -315,7 +297,7 @@ function loadFromCSV(){
       montres = data.map((row, index) => {
         const images = [row.image2, row.image1, row.image3, row.image4].filter(Boolean);
         return {
-          id: row.id ,
+          id: index,
           nom: row.nom,
           marque: row.marque || '',
           marque_logo: row.marque_logo || '',
@@ -329,8 +311,7 @@ function loadFromCSV(){
           categorie: row.categorie || '',
           prix_conseille: row.prix_conseille || '',
           images,
-          active: row.active ? (row.active === '1' || row.active.toLowerCase() === 'true') : true, // par défaut actif
-          stock_qty: row.stock_qty ? Number(row.stock_qty) : 0 // stock, par défaut 0
+          active: row.active ? (row.active === '1' || row.active.toLowerCase() === 'true') : true // par défaut actif
         };
       });
       buildCategoryFilters();

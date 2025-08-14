@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - CRUD Montres</title>
+  <link rel="stylesheet" href="./styles/admin.css">
+</head>
+<body>
+  <header>
+    <h1>CRUD Montres</h1>
+    <div class="auth">
+      <input type="email" id="email" placeholder="email" value="admin@example.com">
+      <input type="password" id="password" placeholder="mot de passe" value="admin123">
+      <button id="btn-login">Se connecter</button>
+      <span id="me"></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="list">
+      <h2>Liste</h2>
+      <div>
+        <input id="search" placeholder="Rechercher...">
+        <button id="btn-refresh">Rafraîchir</button>
+      </div>
+      <table id="tbl">
+        <thead><tr>
+          <th>ID</th><th>Réf.</th><th>Nom</th><th>Marque</th><th>Prix</th>
+          <th>Promo</th><th>Stock</th><th>Statut</th><th>Actions</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="form">
+      <h2>Créer / Éditer</h2>
+      <form id="watch-form">
+        <input type="hidden" name="id">
+        <label>Référence <input name="reference" required></label>
+        <label>Nom <input name="nom"></label>
+        <label>Marque <input name="marque"></label>
+        <label>Prix <input type="number" step="0.01" name="prix" required></label>
+        <label>Promotion <input type="number" step="0.01" name="promotion"></label>
+        <label>Short desc <input name="short_description"></label>
+        <label>Description <textarea name="description"></textarea></label>
+        <label>Catégorie <input name="categorie"></label>
+        <label>État <input name="etat"></label>
+        <label>Status <input name="status" value="active"></label>
+        <label>Stock qty <input type="number" name="stock_qty" value="0"></label>
+        <label>Low stock threshold <input type="number" name="low_stock_threshold" value="0"></label>
+        <div class="row">
+          <button type="submit">Enregistrer</button>
+          <button type="button" id="reset">Reset</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="./js/api.js"></script>
+  <script src="./js/crud.js"></script>
+</body>
+</html>

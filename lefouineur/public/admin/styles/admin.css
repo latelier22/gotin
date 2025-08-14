@@ -1,0 +1,8 @@
+*{box-sizing:border-box} body{font-family:sans-serif;margin:0;padding:0}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #ddd}
+main{display:grid;grid-template-columns:2fr 1fr;gap:16px;padding:16px}
+table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px 8px;font-size:14px}
+input,textarea,button{padding:6px 8px;margin:4px 0;width:100%}
+h1,h2{margin:.4em 0}
+.auth input{width:auto}
+.row{display:flex;gap:8px}

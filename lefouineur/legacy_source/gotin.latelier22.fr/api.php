@@ -46,35 +46,6 @@ function json_fail($msg, $code = 400) {
 switch ($action) {
 
 case 'list': {
-    // Récupère le body JSON (si fourni)
-    $rawBody = file_get_contents('php://input');
-    $data = json_decode($rawBody, true) ?: [];
-
-    // Si "id" présent dans le body → un seul produit
-    if (!empty($data['id'])) {
-        $id = (int)$data['id'];
-        $sql = "
-            SELECT m.*,
-                   ma.logo AS marque_logo
-            FROM montres m
-            LEFT JOIN marques ma ON ma.name = m.marque
-            WHERE m.id = ?
-            LIMIT 1
-        ";
-        $stmt = $db->prepare($sql);
-        $stmt->execute([$id]);
-        $montre = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($montre) {
-            echo json_encode($montre, JSON_UNESCAPED_UNICODE);
-        } else {
-            http_response_code(404);
-            echo json_encode(['error' => 'Produit introuvable'], JSON_UNESCAPED_UNICODE);
-        }
-        exit;
-    }
-
-    // Sinon → liste normale
     $activeOnly = isset($_GET['active_only']) ? (int)$_GET['active_only'] : 1;
 
     $sql = "
@@ -95,41 +66,33 @@ case 'list': {
 }
 
 
-
 case 'add': {
-    try {
-        $stmt = $db->prepare("
-            INSERT INTO montres
-              (nom, marque, prix, prix_conseille, promotion, short_description, description,
-               image1, image2, image3, image4, categorie, reference, etat, status, active, stock_qty)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $data['nom'] ?? '',
-            $data['marque'] ?? '',
-            $data['prix'] ?? 0,
-            $data['prix_conseille'] ?? 0,
-            $data['promotion'] ?? '',
-            $data['short_description'] ?? '',
-            $data['description'] ?? '',
-            $data['image1'] ?? '',
-            $data['image2'] ?? '',
-            $data['image3'] ?? '',
-            $data['image4'] ?? '',
-            $data['categorie'] ?? '',
-            $data['reference'] ?? '',
-            $data['etat'] ?? 'neuf',
-            $data['status'] ?? 'disponible',
-            isset($data['active']) ? (int)$data['active'] : 1,
-            $data['stock_qty'] ?? 0
-        ]);
-        echo json_encode(['message' => 'Ajouté', 'id' => (int)$db->lastInsertId()], JSON_UNESCAPED_UNICODE);
-        exit;
-    } catch (Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['error' => 'DB', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
+    $stmt = $db->prepare("
+        INSERT INTO montres
+          (nom, marque, prix, prix_conseille, promotion, short_description, description,
+           image1, image2, image3, image4, categorie, reference, etat, status, active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([
+        $data['nom'] ?? '',
+        $data['marque'] ?? '',
+        $data['prix'] ?? 0,
+        $data['prix_conseille'] ?? 0,
+        $data['promotion'] ?? '',
+        $data['short_description'] ?? '',
+        $data['description'] ?? '',
+        $data['image1'] ?? '',
+        $data['image2'] ?? '',
+        $data['image3'] ?? '',
+        $data['image4'] ?? '',
+        $data['categorie'] ?? '',
+        $data['reference'] ?? '',
+        $data['etat'] ?? 'neuf',
+        $data['status'] ?? 'disponible',
+        isset($data['active']) ? (int)$data['active'] : 1
+    ]);
+    echo json_encode(['message' => 'Ajouté', 'id' => (int)$db->lastInsertId()], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 case 'edit': {
@@ -139,7 +102,7 @@ case 'edit': {
         UPDATE montres
            SET nom=?, marque=?, prix=?, prix_conseille=?, promotion=?, short_description=?, description=?,
                image1=?, image2=?, image3=?, image4=?,
-               categorie=?, reference=?, etat=?, status=?, active=?, stock_qty=?
+               categorie=?, reference=?, etat=?, status=?, active=?
          WHERE id=?
     ");
     $stmt->execute([
@@ -159,7 +122,6 @@ case 'edit': {
         $data['etat'] ?? 'neuf',
         $data['status'] ?? 'disponible',
         isset($data['active']) ? (int)$data['active'] : 1,
-        isset($data['stock_qty']) ? (int)$data['stock_qty'] : 0,
         $data['id']
     ]);
     echo json_encode(['message' => 'Modifié', 'id' => (int)$data['id']], JSON_UNESCAPED_UNICODE);
@@ -300,41 +262,6 @@ case 'delete_brand': {
     echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
     exit;
 }
-
-case 'adjust_stock': {
-    // on utilise UNIQUEMENT id + delta (JSON ou POST)
-    $id    = isset($data['id'])    ? (int)$data['id']    : (isset($_POST['id'])    ? (int)$_POST['id']    : 0);
-    $delta = isset($data['delta']) ? (int)$data['delta'] : (isset($_POST['delta']) ? (int)$_POST['delta'] : 0);
-
-    if ($id <= 0)        json_fail('id requis', 422);
-    if ($delta === 0)    json_fail('delta required (non-zero)', 422);
-
-    try {
-        // $db est déjà connecté en haut du fichier
-        $sel = $db->prepare('SELECT id, stock_qty FROM montres WHERE id = ?');
-        $sel->execute([$id]);
-        $row = $sel->fetch(PDO::FETCH_ASSOC);
-        if (!$row) json_fail('Produit introuvable', 404);
-
-        $newQty = max(0, (int)$row['stock_qty'] + $delta);
-
-        $up = $db->prepare('UPDATE montres SET stock_qty = ? WHERE id = ?');
-        $up->execute([$newQty, $id]);
-
-        // retourne la ligne complète mise à jour
-        $r2 = $db->prepare('SELECT * FROM montres WHERE id = ?');
-        $r2->execute([$id]);
-        echo json_encode($r2->fetch(PDO::FETCH_ASSOC), JSON_UNESCAPED_UNICODE);
-        exit;
-
-    } catch (Throwable $e) {
-        json_fail('Erreur DB: ' . $e->getMessage(), 500);
-    }
-}
-
-
-
-
 
 default:
     echo json_encode(['error' => 'Action inconnue']);

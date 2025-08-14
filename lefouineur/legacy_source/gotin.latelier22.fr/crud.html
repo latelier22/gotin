@@ -54,7 +54,6 @@
 
   <table>
     <colgroup>
-      <col style="width:1%">
       <col style="width:6%">
       <col style="width:8%">
       <col style="width:10%">
@@ -62,20 +61,18 @@
       <col style="width:7%">
       <col style="width:7%"> <!-- Prix conseillé -->
       <col style="width:6%"> <!-- Ajust % -->
-      <col style="width:9%">
-      <col style="width:15%">
-      <col style="width:15%">
+      <col style="width:12%">
+      <col style="width:16%">
+      <col style="width:18%">
       <col style="width:4%">
       <col style="width:3%">
       <col style="width:3%">
       <col style="width:3%">
       <col style="width:2%">
-      <col style="width:4%">
     </colgroup>
 
     <thead>
       <tr>
-        <th>ID</th>
         <th>Reference</th>
         <th>Marque</th>
         <th>Nom</th>
@@ -90,7 +87,6 @@
         <th>Catégorie</th>
         <th>État</th>
         <th>Status</th>
-        <th>Stock</th>
       </tr>
     </thead>
     <tbody id="montreTable"></tbody>
@@ -126,10 +122,7 @@
 <div id="formModal" style="display:none; position:fixed; inset:0; background:#000c; z-index:900; justify-content:center; align-items:center;">
   <div class="modal-sheet">
     <form id="formMontre" enctype="multipart/form-data" style="background:#222; padding:20px; color:#fff; width:100%; border-radius:10px;">
-      
-      <label>ID :
-        <input type="number" name="id" readonly>
-      </label>
+      <input type="hidden" name="id">
 
       <label>Reference :
         <input type="text" name="reference" required>
@@ -196,10 +189,6 @@
         <input type="checkbox" name="active" checked>
         Actif (visible)
       </label>  
-
-      <label>Stock :
-        <input type="number" name="stock_qty" required>
-      </label>
 
       <div style="margin-top:10px; display:flex; gap:8px;">
         <button type="submit">💾 Enregistrer</button>

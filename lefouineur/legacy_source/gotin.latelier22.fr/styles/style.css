@@ -114,29 +114,7 @@ body {
   margin:4px 0 0; font-size:1.8em; font-weight:600; color: var(--gold);
   text-shadow:1px 1px 4px #000;
 }
-
-
-.info .ref {
-  font-family: 'Roboto', Arial, sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  margin:0; font-size:1.06em; 
-  color:#f8e7b8;
-}
-
-.ref-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.ref, .etat {
-  margin: 0;
-}
-
-
-
+.info .ref{ margin:0; font-size:1.06em; color:#f8e7b8; }
 .btn-more{
   margin-top:8px; padding:6px 10px; font-size:.95em; background:transparent;
   color:var(--gold); border:1px solid var(--gold); border-radius:6px; cursor:pointer;

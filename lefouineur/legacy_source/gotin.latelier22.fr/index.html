@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Le fouineur...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFD700">
+  <!-- Police + Styles -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/style.css">
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
+  <!-- PapaParse pour lire data/montres.csv -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <!-- Script principal -->
+  <script src="js/script.js" defer></script>
+</head>
+
+<link rel="icon" type="image/png" href="images/logo-site2.png">
+
+<body>
+  <div class="container"> 
+    <div class="site-title" style="position: relative; width: 100%; display: flex; align-items: center;">
+  
+  <!-- Bloc gauche : logo + titre -->
+  <div style="display: flex; align-items: center;">
+    <img src="images/logo-site2.png" 
+         alt="Logo du site" 
+         class="logo" 
+         style="height: 48px; margin-right: 12px; background: #fff; border-radius: 100%; " />
+    <h1 style="margin: 0;">Le fouineur...</h1>
+  </div>
+
+  <!-- Catégorie active centrée dans la fenêtre -->
+  <span id="active-category" 
+        style="position: absolute; left: 50%; transform: translateX(-50%); font-size: 2em; font-weight: 500; text-align: center;">
+  </span>
+</div>
+
+
+    <div class="main-layout">
+      <!-- COLONNE GAUCHE : Filtres -->
+      <div class="left-panel">
+        <h2>Catégories</h2>
+        <div id="filters" class="filters">
+        </div>
+      </div>
+
+      <!-- COLONNE CENTRALE : Produit -->
+      <div class="center-panel">
+        <div id="montres-container"></div>
+        <div class="navigation">
+          <button onclick="changeMontre(-1)">⟵ Précédente</button>
+          <button onclick="changeMontre(1)">Suivante ⟶</button>
+        </div>
+      </div>
+
+      <!-- COLONNE DROITE : Miniatures -->
+      <div class="right-panel">
+        <h2>Les autres<br>produits</h2>
+        <div class="thumbnail-strip" id="thumbnail-strip"></div>
+      </div>
+    </div>
+
+    <!-- Modale Images -->
+    <div class="modal" id="imageModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">✖</span>
+        <span class="prev" onclick="prevImage()">◀</span>
+        <img id="modalImage" src="">
+        <span class="next" onclick="nextImage()">▶</span>
+      </div>
+    </div>
+
+    <!-- Pied de page -->
+    <footer class="footer">
+      <p>
+        Pour tout renseignement :
+        <a href="mailto:robic@gmail.com">robic@gmail.com</a> —
+        <a href="tel:+33326156546">+33 3 26 15 65 46</a> —
+        <a href="https://lefouineur.latelier22.fr" target="_blank">lefouineur.latelier22.fr</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,2 @@
+-- 002_stock.sql
+-- Placeholder for future stock-related migrations

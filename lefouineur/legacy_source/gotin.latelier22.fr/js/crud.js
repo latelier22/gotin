@@ -109,10 +109,6 @@ function displayMontres() {
   list.forEach((m, index) => {
     const tr = document.createElement("tr");
 
-    // 0) ID (pour le bouton de suppression)
-    const tdId = document.createElement("td");
-    tdId.textContent = m.id ;
-
     // 1) Ref
     const tdRef = document.createElement("td");
     tdRef.textContent = m.reference || "";
@@ -158,10 +154,6 @@ tdPrixConseille.textContent =
     // 5) Promo
     const tdPromo = document.createElement("td");
     tdPromo.textContent = m.promotion ? `${m.promotion} €` : "";
-
-    // 5) Stock
-    const tdStock = document.createElement("td");
-    tdStock.textContent = m.stock_qty ;
 
     // 6) Courte description
     const tdShort = document.createElement("td");
@@ -221,7 +213,7 @@ tdActive.appendChild(btnToggle);
     const tdEtat= document.createElement("td"); tdEtat.textContent = m.etat || "";
     const tdStat= document.createElement("td"); tdStat.textContent = m.status || "";
 
-    tr.append(tdId, tdRef, tdMarque, tdNom, tdPrixConseille, tdPrix, tdPromo, tdShort, tdDesc, tdImgs, tdActive,  tdActions, tdCat, tdEtat, tdStat, tdStock);
+    tr.append(tdRef, tdMarque, tdNom, tdPrixConseille, tdPrix, tdPromo, tdShort, tdDesc, tdImgs, tdActive,  tdActions, tdCat, tdEtat, tdStat);
     tbody.appendChild(tr);
   });
 }
@@ -328,8 +320,6 @@ async function openEditModal(index){
   form.categorie.value         = m.categorie ?? "Montres";
   form.etat.value              = m.etat ?? "Neuf";
   form.status.value            = m.status ?? "disponible";
-  form.stock_qty.value         = m.stock_qty ?? ""; // stock_qty
-
 
   // Champ "active" (accepte 1/0/true/false/"1"/"0"/"true"/"false")
   if (form.active) {
@@ -433,7 +423,6 @@ async function onFormSubmit(e){
   dataForm.set("action", editing ? "edit" : "add");
   dataForm.set("promotion", form.promotion.value ? String(parseFloat(form.promotion.value)) : "");
   dataForm.set("active", form.active?.checked ? "1" : "0");
-  dataForm.set("stock_qty", form.stock_qty.value ? String(parseInt(form.stock_qty.value, 10)) : "");
 
   showSpinner();
   try {
@@ -475,7 +464,7 @@ function sendSQLiteDataToServer(){
     "short_description","description",
     "image1","image2","image3","image4",
     "categorie","etat","status","prix_conseille",
-    "active", "stock_qty"
+    "active" // <= AJOUT
   ];
 
   const rows = montres.map((m, i) => {
@@ -498,8 +487,7 @@ function sendSQLiteDataToServer(){
       id: (m.id ?? i),
       marque_logo: inferredLogo,
       short_description: (m.short_description ?? ""),
-      active: activeVal,
-      
+      active: activeVal
     };
 
     return headers.map(h => {
