@@ -89,23 +89,23 @@ body {
 
 /* Rubans */
 .ribbon {
-  position: absolute; top: 12px; right: -40px;
-  width: 160px; text-align: center; transform: rotate(45deg); z-index: 3;
+  position: absolute; top: 30px; right: -40px;
+  width: 200px; text-align: center; transform: rotate(45deg); z-index: 1001;
 }
 .ribbon span {
-  display: block; background: #E53935; color: #fff; font-weight: 700; padding: 6px 0;
+  display: block; background: #E53935; color: #fff; font-weight: 1000; padding: 10px 0;
   box-shadow: 0 2px 6px rgba(0,0,0,.4); letter-spacing: .5px;
 }
 .ribbon-left {
-  position: absolute; top: 12px; left: -40px; width: 160px; text-align: center;
-  transform: rotate(-45deg); z-index: 3;
+  position: absolute; top: 30px; left: -40px; width: 200px; text-align: center;
+  transform: rotate(-45deg); z-index: 1000;
 }
-.ribbon-left span { display: block; background: #E53935; color: #fff; font-weight: 700; padding: 6px 0; box-shadow: 0 2px 6px rgba(0,0,0,.4); letter-spacing: .5px; }
+.ribbon-left span { display: block;  color: #fff; font-weight: 1000; padding: 10px 0; box-shadow: 0 2px 6px rgba(0,0,0,.4); letter-spacing: .5px; }
 
 /* Infos haut gauche (décalées) */
 .info{
   position:absolute; z-index:2; color:var(--gold2);
-  top:18px; left:70px; /* ← décalé vers la droite */
+  top:10%; left:70px; /* ← décalé vers la droite */
   background:rgba(0,0,0,.6);
   padding:14px 16px; border:1px solid var(--gold2);
   border-radius:10px; max-width:78%; backdrop-filter: blur(2px);
@@ -269,8 +269,8 @@ body {
 /* Bloc info (gauche) */
 .main-display .info {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 10%;
+  left: 5%;
   width: var(--info-w);
   max-width: 560px;            /* garde-fou si très large */
   z-index: 3;

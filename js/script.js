@@ -186,11 +186,13 @@ function renderMontres(){
     div.className = "montre" + (index === 0 ? " active" : "");
     div.id = `montre-${index}`;
 
+
     const ribbons = `
       ${hasPromo(montre) ? `<div class="ribbon"><span>PROMO</span></div>` : ''}
-      ${hasAchat(montre) ? `<div class="ribbon-left"><span>Achat en cours</span></div>` : ''}
-      ${hasVendu(montre) ? `<div class="ribbon-left"><span>VENDU</span></div>` : ''}
+      ${hasAchat(montre) ? `<div class="ribbon-left" style="background: rgba(241, 95, 11, 1);"><span>Achat en cours</span></div>` : ''}
+      ${hasVendu(montre) ? `<div class="ribbon-left" style="background: rgba(241, 95, 11, 1);"><span>VENDU</span></div>` : `<div class="ribbon-left" style="background: #0F0;"><span style="color:#000;">DISPONIBLE</span></div>`}
     `;
+
 
     const brandHtml = brandBlock(montre);
     const priceHtml = priceBlock(montre);

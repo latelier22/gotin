@@ -25,6 +25,10 @@ let editSlots = [
 ];
 let currentEditSlot = -1;
 
+
+
+
+
 // Helpers
 const $  = (s) => document.querySelector(s);
 const $id = (id) => document.getElementById(id);
@@ -69,11 +73,18 @@ async function fetchMontres() {
   showSpinner();
   try {
     let url = API_URL + "?action=list";
-    url += (activeFilterMode === 'active') ? "&active_only=1" : "&active_only=0";
+    if (trashMode) {
+      url += "&only_trash=1"; // mode corbeille
+    } else {
+      url += (activeFilterMode === 'active') ? "&active_only=1" : "&active_only=0";
+    }
+
+    const brand = document.getElementById('brandFilter')?.value || "";
+    if (brand) url += "&brand=" + encodeURIComponent(brand);
 
     const res = await fetch(url);
     montres = await res.json();
-    displayMontres(); // garde le filtrage par catégorie côté client
+    displayMontres();
   } catch(e) {
     console.error(e);
     alert("Erreur de chargement des produits.");
@@ -81,6 +92,7 @@ async function fetchMontres() {
     hideSpinner();
   }
 }
+
 
 
 // Affichage tableau (avec logo de marque via brandIndex)
@@ -162,6 +174,14 @@ tdPrixConseille.textContent =
     // 5) Stock
     const tdStock = document.createElement("td");
     tdStock.textContent = m.stock_qty ;
+    const tdStockEdit = document.createElement("button");
+    tdStockEdit.className = "btn-edit-stock";
+    tdStockEdit.textContent = "✏️";
+    tdStockEdit.title = "Modifier le stock";
+    tdStockEdit.addEventListener("click", () => openStockModal(m.id, m.stock_qty));
+    tdStock.appendChild(document.createTextNode(" "));
+    tdStock.appendChild(tdStockEdit);
+    
 
     // 6) Courte description
     const tdShort = document.createElement("td");
@@ -187,7 +207,7 @@ tdPrixConseille.textContent =
     const imgs = [m.image1, m.image2, m.image3, m.image4].filter(Boolean);
     imgs.forEach((src,i) => {
       const im = document.createElement("img");
-      im.src = src; im.alt = "";
+      im.src = "../" + src; im.alt = "";
       im.addEventListener("click", () => openModal(imgs, i));
       thumbs.appendChild(im);
     });
@@ -208,13 +228,33 @@ tdActive.appendChild(document.createElement("br"));
 tdActive.appendChild(btnToggle);
 
 
-    // 9) Actions
-    const tdActions = document.createElement("td");
-    const bEdit = document.createElement("button"); bEdit.title="Éditer"; bEdit.textContent="📝";
-    bEdit.addEventListener("click", () => openEditModal(index));
-    const bDel  = document.createElement("button"); bDel.title="Supprimer"; bDel.textContent="🗑️";
-    bDel.addEventListener("click", () => deleteMontre(m.id));
-    tdActions.appendChild(bEdit); tdActions.appendChild(bDel);
+   // 9) Actions
+const tdActions = document.createElement("td");
+
+// Éditer (uniquement hors corbeille)
+if (!trashMode) {
+  const bEdit = document.createElement("button");
+  bEdit.title = "Éditer";
+  bEdit.textContent = "📝";
+  bEdit.addEventListener("click", () => openEditModal(index));
+  tdActions.appendChild(bEdit);
+}
+
+// Corbeille ↔ Restaurer selon le mode
+const bTrashOrRestore = document.createElement("button");
+
+if (trashMode) {
+  bTrashOrRestore.title = "Restaurer";
+  bTrashOrRestore.textContent = "♻ Restaurer";
+  bTrashOrRestore.addEventListener("click", () => restoreMontre(m.id));
+} else {
+  bTrashOrRestore.title = "Mettre à la corbeille";
+  bTrashOrRestore.textContent = "🗑️";
+  bTrashOrRestore.addEventListener("click", () => deleteMontre(m.id));
+}
+
+tdActions.appendChild(bTrashOrRestore);
+
 
     // 10) Cat / 11) État / 12) Status
     const tdCat = document.createElement("td"); tdCat.textContent = m.categorie || "";
@@ -234,7 +274,7 @@ function openModal(images, start=0){
   currentIndex = start;
   const img = $id("modal-image"), modal = $id("modal");
   if (!img || !modal) return;
-  img.src = currentImages[currentIndex] || "";
+  img.src = "../" + currentImages[currentIndex] || "";
   modal.style.display = "flex";
 }
 function closeModal(){ const m=$id("modal"); if(m) m.style.display="none"; }
@@ -265,9 +305,9 @@ function renderPreview(){
     const img = document.createElement('img'); img.alt=''; img.style.cursor='pointer';
     if (editSlots[i].file){
       const url = URL.createObjectURL(editSlots[i].file);
-      img.src = url; img.onload = () => URL.revokeObjectURL(url);
+      img.src =url; img.onload = () => URL.revokeObjectURL(url);
     } else if (editSlots[i].src){
-      img.src = editSlots[i].src;
+      img.src = "../" + editSlots[i].src;
     } else {
       img.src = 'data:image/svg+xml;utf8,'+encodeURIComponent(
         `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
@@ -365,8 +405,8 @@ function openEditImageModal(slotIndex){
   const modal = $id('editImageModal'), img=$id('editImageModalImg');
   if (!modal || !img) return;
   const s = editSlots[slotIndex];
-  if (s.file){ const url = URL.createObjectURL(s.file); img.src = url; img.onload = () => URL.revokeObjectURL(url); }
-  else if (s.src){ img.src = s.src; }
+  if (s.file){ const url = URL.createObjectURL(s.file); img.src = "../"+ url; img.onload = () => URL.revokeObjectURL(url); }
+  else if (s.src){ img.src = "../" +s.src; }
   else {
     img.src = 'data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#eee"/><text x="50%" y="50%" font-size="16" text-anchor="middle" fill="#666" dy=".3em">Aucune image</text></svg>`);
   }
@@ -405,7 +445,7 @@ async function onFormSubmit(e){
     if (s.file){
       const finalFile = (s.file instanceof File) ? s.file : new File([s.file], `img-${Date.now()}-${i}.jpg`, {type:'image/jpeg'});
       imageForm.append(`image${i+1}`, finalFile);
-      imagePaths[i] = "images/" + finalFile.name;
+      imagePaths[i] = "../images/" + finalFile.name;
       hasNewFiles = true;
     } else if (s.src){
       imagePaths[i] = s.src;
@@ -416,7 +456,7 @@ async function onFormSubmit(e){
 
   if (hasNewFiles){
     try {
-      const resp = await fetch("upload-images.php", { method: "POST", body: imageForm });
+      const resp = await fetch("../upload-images.php", { method: "POST", body: imageForm });
       if (!resp.ok) throw new Error(`Upload images: HTTP ${resp.status}`);
     } catch (err) {
       console.error(err);
@@ -465,7 +505,8 @@ async function deleteMontre(id){
 async function downloadZip(){ /* ... si besoin ... */ }
 function downloadProduitsCSV(){ /* ... si besoin ... */ }
 function sendSQLiteDataToServer(){
-  if (!montres.length){ alert("Aucune donnée à envoyer !"); return; }
+  if (trashMode) { alert('Indisponible en mode corbeille'); return; }
+  // if (!montres.length){ alert("Aucune donnée à envoyer !"); return; }
 
   // Ajout de marque_logo + short_description + active
   const headers = [
@@ -518,7 +559,7 @@ function sendSQLiteDataToServer(){
   formData.append("csvFile", blob, "montres.csv");
 
   showSpinner();
-  fetch("upload.php", { method:"POST", body: formData })
+  fetch("../upload.php", { method:"POST", body: formData })
     .then(r => r.text())
     .then(msg => { hideSpinner(); alert("✅ CSV mis à jour sur le serveur :\n" + msg); })
     .catch(err => { hideSpinner(); alert("❌ Erreur : " + err.message); });
@@ -530,36 +571,91 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (form) form.addEventListener('submit', onFormSubmit);
 
   const imagesInput = form?.querySelector('input[name="images"]');
-  if (imagesInput){
+  if (imagesInput) {
     imagesInput.addEventListener('change', async () => {
       const files = imagesInput.files || [];
       const prepared = [];
-      for (let i=0;i<Math.min(files.length,4);i++){ prepared.push(await prepareFile(files[i])); }
-      for (let i=0;i<4;i++){ const f = prepared[i] || null; if (f) editSlots[i] = { src:null, file:f, deleted:false }; }
-      compactSlots(); renderPreview();
+      for (let i = 0; i < Math.min(files.length, 4); i++) {
+        prepared.push(await prepareFile(files[i]));
+      }
+      for (let i = 0; i < 4; i++) {
+        const f = prepared[i] || null;
+        if (f) editSlots[i] = { src: null, file: f, deleted: false };
+      }
+      compactSlots();
+      renderPreview();
     });
   }
 
   $id('replaceImageInput')?.addEventListener('change', onReplaceInputChange);
 
   // --- Bouton "Actifs / Tous"
-const toggleBtn = $id('toggle-active-btn');
-if (toggleBtn) {
-  // libellé initial
-  toggleBtn.textContent = (activeFilterMode === 'active') ? 'Afficher : Actifs' : 'Afficher : Tous';
-
-  toggleBtn.addEventListener('click', () => {
-    activeFilterMode = (activeFilterMode === 'all') ? 'active' : 'all';
+  const toggleBtn = $id('toggle-active-btn');
+  if (toggleBtn) {
     toggleBtn.textContent = (activeFilterMode === 'active') ? 'Afficher : Actifs' : 'Afficher : Tous';
-    fetchMontres(); // recharge la liste en respectant Actifs/Tous
-  });
+    toggleBtn.addEventListener('click', () => {
+      activeFilterMode = (activeFilterMode === 'all') ? 'active' : 'all';
+      toggleBtn.textContent = (activeFilterMode === 'active') ? 'Afficher : Actifs' : 'Afficher : Tous';
+      fetchMontres(); // recharge la liste
+    });
+  }
+
+  // --- Ajout du filtre par marque
+  const brandFilter = document.getElementById('brandFilter');
+  if (brandFilter) {
+    brandFilter.addEventListener('change', () => {
+      fetchMontres(); // recharge la liste avec la marque choisie
+    });
+  }
+
+  // 1) charge les marques (construit brandIndex + remplit le select) puis 2) charge les produits
+  await fetchBrands();
+  await populateBrandFilter();
+  await fetchMontres();
+  updateSendBtnState();
+});
+
+
+async function populateBrandFilter() {
+  const sel = document.getElementById('brandFilter');
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="">Toutes</option>`;
+  for (const brandName of Object.keys(brandIndex)) {
+    const opt = document.createElement('option');
+    opt.value = brandName;
+    opt.textContent = brandName;
+    sel.appendChild(opt);
+  }
 }
 
 
-  // 1) charge les marques (construit brandIndex) puis 2) charge les produits
-  await fetchBrands();
-  await fetchMontres();
-});
+
+async function loadBrands() {
+  const r = await fetch('api.php?action=list_brands');
+  const brands = await r.json(); // [{id,name,logo}, ...]
+  const sel = document.getElementById('brandFilter');
+  // reset (garde "Toutes")
+  sel.length = 1;
+  brands.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b.name;
+    opt.textContent = b.name;
+    sel.appendChild(opt);
+  });
+}
+
+async function fetchList() {
+  const brand = document.getElementById('brandFilter').value.trim();
+  const params = new URLSearchParams();
+  params.set('action','list');
+  if (brand) params.set('brand', brand);         // GET
+  // Si tu préfères POST JSON, commente la ligne dessus et utilise body JSON.
+
+  const url = 'api.php?' + params.toString();
+  const r = await fetch(url);
+  return r.json();
+}
 
 
 async function toggleActive(id, newValue){
@@ -576,6 +672,93 @@ async function toggleActive(id, newValue){
     alert("Erreur lors du changement d'état actif/inactif.");
   }
 }
+
+function openStockModal(id, currentQty) {
+  document.getElementById('stockMontreId').value = id;
+  document.getElementById('currentStock').textContent = currentQty;
+  document.getElementById('stockType').value = 'in';
+  document.getElementById('stockDelta').value = 1;
+  document.getElementById('stockReason').value = '';
+  document.getElementById('stockModal').style.display = 'flex';
+}
+
+function closeStockModal() {
+  document.getElementById('stockModal').style.display = 'none';
+}
+
+async function submitStockChange() {
+  const id = parseInt(document.getElementById('stockMontreId').value);
+  const type = document.getElementById('stockType').value;
+  const delta = parseInt(document.getElementById('stockDelta').value);
+  const reason = document.getElementById('stockReason').value.trim();
+
+  if (!reason) {
+    alert("Veuillez indiquer une raison !");
+    return;
+  }
+
+  const realDelta = (type === 'in') ? delta : -delta;
+
+  const res = await fetch(API_URL + "?action=adjust_stock", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, delta: realDelta, reason })
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    alert("Stock mis à jour !");
+    const m = data.item;
+    closeStockModal();
+    fetchMontres(); // recharge la liste
+  } else {
+    alert("Erreur: " + (data.error || 'inconnue'));
+  }
+}
+
+
+let trashMode = false;
+
+function updateSendBtnState() {
+  const btn = document.getElementById('sendBtn');
+  if (!btn) return;
+  // true => désactivé, false => activé
+  btn.toggleAttribute('disabled', !!trashMode);
+  btn.title = trashMode ? 'Indisponible en mode corbeille' : '📤 Envoyer données vers serveur';
+}
+
+
+document.getElementById('toggle-trash-btn').addEventListener('click', () => {
+    trashMode = !trashMode;
+    document.getElementById('toggle-trash-btn').textContent = trashMode ? 'Afficher produits' : 'Afficher corbeille';
+    updateSendBtnState();
+    fetchMontres();
+});
+
+async function restoreMontre(id){
+  if (!confirm("Restaurer cet article ?")) return;
+  showSpinner();
+  try {
+    const fd = new FormData();
+    fd.append("action", "restore");
+    fd.append("id", id);
+    const r = await fetch(API_URL, { method:"POST", body: fd });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    await fetchMontres(); // recharge la liste (reste en mode corbeille)
+  } catch(e) {
+    console.error(e);
+    alert("Erreur lors de la restauration.");
+  } finally {
+    hideSpinner();
+  }
+}
+window.restoreMontre = restoreMontre;
+
+
+
+
+
+
 window.toggleActive = toggleActive;
 
 // expose pour HTML inline

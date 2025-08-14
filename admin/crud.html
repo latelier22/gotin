@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="styles/crud.css">
+  <link rel="stylesheet" href="../styles/crud.css">
 
   <!-- Mini styles nécessaires pour la colonne Marque -->
   <style>
@@ -16,9 +16,9 @@
   </style>
 
   <!-- Scripts (ORDRE IMPORTANT) -->
-  <script>window.API_URL = "api.php";</script>
-  <script src="js/marque.js?v=3" defer></script>
-  <script src="js/crud.js?v=3" defer></script>
+  <script>window.API_URL = "../api.php";</script>
+  <script src="../js/marque.js?v=3" defer></script>
+  <script src="../js/crud.js?v=3" defer></script>
 
   <!-- ZIP (optionnel) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -33,11 +33,11 @@
   <h1>Gestion des produits</h1>
 
   <div>
-    <button onclick="window.location.href='index.html'">🏠 Voir les produits</button>
+    <button onclick="window.location.href='../index.html'">🏠 Voir les produits</button>
     <button onclick="openBrandModal()">🏷️ Marques</button>
     <button onclick="openAddModal()">➕ Ajouter un produit</button>
-    <button onclick="sendSQLiteDataToServer()">📤 Envoyer données vers serveur</button>
-    <button onclick="window.location.href='data/montres.csv'">📥 Télécharger données csv</button>
+    <button id="sendBtn" onclick="sendSQLiteDataToServer()">📤 Envoyer données vers serveur</button>
+    <button onclick="window.location.href='../data/montres.csv'">📥 Télécharger données csv</button>
   </div>
 
   <div id="filters-container" style="display: flex; align-items: center; gap: 8px;"></div>
@@ -50,6 +50,13 @@
   <button id="toggle-active-btn" data-mode="all" style="margin-left: auto;">
     Afficher : Tous
   </button>
+<label for="brandFilter">Filtrer par marque :</label>
+<select id="brandFilter">
+  <option value="">Toutes</option>
+</select>
+<button id="toggle-trash-btn">Afficher corbeille</button>
+  <button onclick="window.location.href='history.php'" >Afficher historique</button>
+
   </div>
 
   <table>
@@ -255,6 +262,47 @@
     </form>
   </div>
 </div>
+
+
+<div id="stockModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close" onclick="closeStockModal()">&times;</span>
+    <h2>Modifier le stock</h2>
+
+    <input type="hidden" id="stockMontreId">
+
+    <p>Stock actuel : <strong id="currentStock"></strong></p>
+
+    <label>
+      Mouvement :
+      <select id="stockType">
+        <option value="in">Entrée</option>
+        <option value="out">Sortie</option>
+      </select>
+    </label>
+
+    <label>
+      Quantité :
+      <input type="number" id="stockDelta" min="1" value="1">
+    </label>
+
+    <label>
+      Raison :
+      <textarea id="stockReason" placeholder="Ex: Réception fournisseur, retour client..."></textarea>
+    </label>
+
+    <button onclick="submitStockChange()">Valider</button>
+  </div>
+</div>
+
+<style>
+  .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; }
+  .modal-content { background:#fff; padding:20px; border-radius:8px; width:300px; }
+  .modal-content h2 { margin-top:0; }
+  .close { float:right; cursor:pointer; font-size:20px; }
+</style>
+
+
 
 
   <style>@keyframes spin { to { transform: rotate(360deg); } }</style>

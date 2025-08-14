@@ -44,28 +44,38 @@ function json_fail($msg, $code = 400) {
 //                         PRODUITS (montres)
 // ===================================================================
 switch ($action) {
-
 case 'list': {
-    // Récupère le body JSON (si fourni)
-    $rawBody = file_get_contents('php://input');
-    $data = json_decode($rawBody, true) ?: [];
+    // ⚠️ NE PAS relire php://input ici : tu as déjà $data plus haut
+    $id          = isset($_GET['id'])           ? (int)$_GET['id']           : (isset($data['id'])           ? (int)$data['id']           : 0);
+    $brand       = isset($_GET['brand'])        ? trim($_GET['brand'])       : (isset($data['brand'])        ? trim($data['brand'])       : '');
+    $activeOnly  = isset($_GET['active_only'])  ? (int)$_GET['active_only']  : (isset($data['active_only'])  ? (int)$data['active_only']  : 1);
+    $includeTrash= isset($_GET['include_trash'])? (int)$_GET['include_trash']: (isset($data['include_trash'])? (int)$data['include_trash']: 0);
+    $onlyTrash   = isset($_GET['only_trash'])   ? (int)$_GET['only_trash']   : (isset($data['only_trash'])   ? (int)$data['only_trash']   : 0);
 
-    // Si "id" présent dans le body → un seul produit
-    if (!empty($data['id'])) {
-        $id = (int)$data['id'];
+    // -------------------------
+    // Cas A : un seul produit
+    // -------------------------
+    if ($id > 0) {
         $sql = "
-            SELECT m.*,
-                   ma.logo AS marque_logo
+            SELECT m.*, ma.logo AS marque_logo
             FROM montres m
             LEFT JOIN marques ma ON ma.name = m.marque
-            WHERE m.id = ?
-            LIMIT 1
+            WHERE m.id = :id
         ";
+        // Par défaut, on EXCLUT la corbeille; pour l'inclure explicitement -> include_trash=1
+        if (!$includeTrash) {
+            $sql .= " AND COALESCE(m.corbeille,0) = 0";
+        }
+        $sql .= " LIMIT 1";
+
         $stmt = $db->prepare($sql);
-        $stmt->execute([$id]);
+        $stmt->execute([':id' => $id]);
         $montre = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($montre) {
+            if (isset($montre['stock_qty']) && (int)$montre['stock_qty'] === 0) {
+                $montre['status'] = 'Vendu';
+            }
             echo json_encode($montre, JSON_UNESCAPED_UNICODE);
         } else {
             http_response_code(404);
@@ -74,22 +84,54 @@ case 'list': {
         exit;
     }
 
-    // Sinon → liste normale
-    $activeOnly = isset($_GET['active_only']) ? (int)$_GET['active_only'] : 1;
-
+    // -------------------------
+    // Cas B/C : liste
+    // -------------------------
     $sql = "
-        SELECT m.*,
-               ma.logo AS marque_logo
+        SELECT m.*, ma.logo AS marque_logo
         FROM montres m
         LEFT JOIN marques ma ON ma.name = m.marque
     ";
+
+    $where  = [];
+    $params = [];
+
+    // Gestion corbeille
+    if ($onlyTrash) {
+        $where[] = "COALESCE(m.corbeille,0) = 1";           // uniquement corbeille
+    } else if (!$includeTrash) {
+        $where[] = "COALESCE(m.corbeille,0) = 0";           // exclure corbeille (défaut)
+    } // sinon include_trash=1 -> on ne met pas de condition sur corbeille
+
+    // Actifs uniquement par défaut
     if ($activeOnly) {
-        $sql .= " WHERE COALESCE(m.active,1) = 1 ";
+        $where[] = "COALESCE(m.active,1) = 1";
+    }
+
+    // Filtre marque exact (si fourni)
+    if ($brand !== '') {
+        $where[] = "m.marque = :brand";
+        $params[':brand'] = $brand;
+    }
+
+    if ($where) {
+        $sql .= " WHERE " . implode(" AND ", $where);
     }
     $sql .= " ORDER BY m.id ASC";
 
-    $stmt = $db->query($sql);
+    $stmt = $db->prepare($sql);
+    foreach ($params as $k => $v) {
+        $stmt->bindValue($k, $v);
+    }
+    $stmt->execute();
     $montres = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($montres as &$m) {
+        if (isset($m['stock_qty']) && (int)$m['stock_qty'] === 0) {
+            $m['status'] = 'Vendu';
+        }
+    }
+
     echo json_encode($montres, JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -171,11 +213,36 @@ case 'delete': {
     $id = $_GET['id'] ?? $_POST['id'] ?? $data['id'] ?? null;
     if (!is_numeric($id)) json_fail('ID invalide');
 
-    $stmt = $db->prepare("DELETE FROM montres WHERE id=?");
+    // Passage en corbeille au lieu de suppression définitive
+    $stmt = $db->prepare("UPDATE montres SET corbeille = 1 WHERE id = ?");
     $stmt->execute([$id]);
-    echo json_encode(['message' => 'Supprimé', 'id' => (int)$id], JSON_UNESCAPED_UNICODE);
+
+    echo json_encode([
+        'message' => 'Mis en corbeille',
+        'id'      => (int)$id
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+case 'restore': {
+    $id = $_GET['id'] ?? $_POST['id'] ?? $data['id'] ?? null;
+    if (!is_numeric($id)) json_fail('ID invalide');
+
+    try {
+        $stmt = $db->prepare("UPDATE montres SET corbeille = 0 WHERE id = ?");
+        $stmt->execute([$id]);
+
+        echo json_encode([
+            'message' => 'Produit restauré',
+            'id'      => (int)$id,
+            'success' => true
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Throwable $e) {
+        json_fail('Erreur DB: ' . $e->getMessage(), 500);
+    }
+}
+break;
 
 
 case 'set_active': {
@@ -302,35 +369,52 @@ case 'delete_brand': {
 }
 
 case 'adjust_stock': {
-    // on utilise UNIQUEMENT id + delta (JSON ou POST)
-    $id    = isset($data['id'])    ? (int)$data['id']    : (isset($_POST['id'])    ? (int)$_POST['id']    : 0);
-    $delta = isset($data['delta']) ? (int)$data['delta'] : (isset($_POST['delta']) ? (int)$_POST['delta'] : 0);
+    // on utilise UNIQUEMENT id + delta (+ reason obligatoire)
+    $id     = isset($data['id'])     ? (int)$data['id']     : (isset($_POST['id'])     ? (int)$_POST['id']     : 0);
+    $delta  = isset($data['delta'])  ? (int)$data['delta']  : (isset($_POST['delta'])  ? (int)$_POST['delta']  : 0);
+    $reason = isset($data['reason']) ? trim($data['reason']) : (isset($_POST['reason']) ? trim($_POST['reason']) : '');
 
-    if ($id <= 0)        json_fail('id requis', 422);
-    if ($delta === 0)    json_fail('delta required (non-zero)', 422);
+    if ($id <= 0)         json_fail('id requis', 422);
+    if ($delta === 0)     json_fail('delta required (non-zero)', 422);
+    if ($reason === '')   json_fail('reason requise', 422);
 
     try {
-        // $db est déjà connecté en haut du fichier
+        // Vérifier si la montre existe
         $sel = $db->prepare('SELECT id, stock_qty FROM montres WHERE id = ?');
         $sel->execute([$id]);
         $row = $sel->fetch(PDO::FETCH_ASSOC);
         if (!$row) json_fail('Produit introuvable', 404);
 
+        // Nouveau stock (minimum 0)
         $newQty = max(0, (int)$row['stock_qty'] + $delta);
 
+        // Mise à jour du stock
         $up = $db->prepare('UPDATE montres SET stock_qty = ? WHERE id = ?');
         $up->execute([$newQty, $id]);
 
-        // retourne la ligne complète mise à jour
-        $r2 = $db->prepare('SELECT * FROM montres WHERE id = ?');
-        $r2->execute([$id]);
-        echo json_encode($r2->fetch(PDO::FETCH_ASSOC), JSON_UNESCAPED_UNICODE);
-        exit;
+        // Insérer dans l’historique
+        $log = $db->prepare('INSERT INTO stock_history (montre_id, delta, reason, created_at) VALUES (?, ?, ?, datetime("now"))');
+        $log->execute([$id, $delta, $reason]);
+
+        // Retourner la ligne complète mise à jour
+$r2 = $db->prepare('SELECT * FROM montres WHERE id = ?');
+$r2->execute([$id]);
+$updated = $r2->fetch(PDO::FETCH_ASSOC);
+
+// ✅ renvoyer UN SEUL JSON, avec un champ success
+echo json_encode([
+    'success' => true,
+    'item'    => $updated
+], JSON_UNESCAPED_UNICODE);
+exit;
+
+
 
     } catch (Throwable $e) {
         json_fail('Erreur DB: ' . $e->getMessage(), 500);
     }
 }
+
 
 
 
