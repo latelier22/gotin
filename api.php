@@ -415,12 +415,71 @@ exit;
     }
 }
 
+case 'get_contact': {
+    // Retourne le contact footer
+    $stmt = $db->prepare("SELECT value FROM settings WHERE key = 'contact_footer' LIMIT 1");
+    $stmt->execute();
+    $val = $stmt->fetchColumn();
+    if ($val === false) {
+        // Si pas trouvé, on retourne une valeur par défaut vide
+        $val = '';
+    }
+    echo json_encode(['value' => $val], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+// === CONTACT FOOTER ===
 
+case 'set_contact':{
+    // Met à jour le contact footer
+    $val = $_POST['value'] ?? ($data['value'] ?? '');
+    // if ($val === '') {
+    //     json_fail('Valeur de contact requise', 422);
+    // }
 
-
+    try {
+        $stmt = $db->prepare("
+            INSERT INTO settings(key, value) VALUES('contact_footer', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        ");
+        $stmt->execute([$val]);
+        echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (PDOException $e) {
+        json_fail('Erreur DB: ' . $e->getMessage(), 500);
+    }       
+}
 
 
 default:
     echo json_encode(['error' => 'Action inconnue']);
     exit;
+}
+
+
+function log_action(PDO $db, string $action, string $entity, $entityId = null, $detailArr = []) {
+    try {
+        $ip  = $_SERVER['REMOTE_ADDR']    ?? '';
+        $ua  = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        // On évite les énormes payloads
+        $detailJson = json_encode($detailArr, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($detailJson !== null && strlen($detailJson) > 60000) {
+            $detailJson = substr($detailJson, 0, 60000);
+        }
+
+        $stmt = $db->prepare("
+            INSERT INTO actions_history (action, entity, entity_id, detail_json, ip, user_agent, created_at)
+            VALUES (:action, :entity, :entity_id, :detail_json, :ip, :ua, datetime('now'))
+        ");
+        $stmt->execute([
+            ':action'     => $action,
+            ':entity'     => $entity,
+            ':entity_id'  => $entityId,
+            ':detail_json'=> $detailJson,
+            ':ip'         => $ip,
+            ':ua'         => $ua
+        ]);
+    } catch (Throwable $e) {
+        // On ne casse jamais l’API pour un échec d’audit
+        // error_log("audit fail: ".$e->getMessage());
+    }
 }

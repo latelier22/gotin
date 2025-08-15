@@ -752,12 +752,50 @@ async function restoreMontre(id){
     hideSpinner();
   }
 }
+
+// ====== CONTACT FOOTER ======
+async function openContactModal(){
+  try {
+    const r = await fetch(API_URL + '?action=get_contact');
+    const j = await r.json();
+    document.getElementById('contactValue').value = j?.value || '';
+  } catch (e) {
+    console.warn(e);
+    document.getElementById('contactValue').value = '';
+  }
+  document.getElementById('contactModal').style.display = 'flex';
+}
+
+function closeContactModal(){
+  document.getElementById('contactModal').style.display = 'none';
+}
+
+document.getElementById('formContact')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const val = document.getElementById('contactValue').value;
+  const fd = new FormData();
+  fd.append('action', 'set_contact');
+  fd.append('value', val);
+  try {
+    showSpinner();
+    const r = await fetch(API_URL, { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    closeContactModal();
+    alert('✅ Contact enregistré.');
+  } catch(err) {
+    console.error(err); alert('❌ Erreur lors de la sauvegarde.');
+  } finally {
+    hideSpinner();
+  }
+});
+
+// expose pour le bouton
+window.openContactModal = openContactModal;
+window.closeContactModal = closeContactModal;
+
+
+
 window.restoreMontre = restoreMontre;
-
-
-
-
-
 
 window.toggleActive = toggleActive;
 

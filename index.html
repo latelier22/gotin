@@ -14,12 +14,28 @@
   <!-- PapaParse pour lire data/montres.csv -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <!-- Script principal -->
+  <script src="js/user.js" defer></script>
   <script src="js/script.js" defer></script>
 </head>
 
 <link rel="icon" type="image/png" href="images/logo-site2.png">
 
 <body>
+
+<header>
+  <img src="https://lefouineur.latelier22.fr/images/logo-site2.png" alt="Logo" />
+  <h1>Le Fouineur</h1>
+
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <span id="auth-status" class="hint">Non connecté</span>
+    <button id="btn-login" class="ghost">Se connecter</button>
+    <button id="btn-account" class="ghost" style="display:none">Mon compte</button>
+    <button id="btn-logout" class="ghost" style="display:none">Se déconnecter</button>
+  </div>
+</header>
+
+
+
   <div class="container"> 
     <div class="site-title" style="position: relative; width: 100%; display: flex; align-items: center;">
   
@@ -75,12 +91,18 @@
 
     <!-- Pied de page -->
     <footer class="footer">
-      <p>
-        Pour tout renseignement :
-        <a href="mailto:robic@gmail.com">robic@gmail.com</a> —
-        <a href="tel:+33326156546">+33 3 26 15 65 46</a> —
-        <a href="https://lefouineur.latelier22.fr" target="_blank">lefouineur.latelier22.fr</a>
-      </p>
+      <div id="contactFooter">
+
+
+
+
+        <p>
+          Pour tout renseignement :
+          <a href="mailto:robic@gmail.com">robic@gmail.com</a> —
+          <a href="tel:+33326156546">+33 3 26 15 65 46</a> —
+          <a href="https://lefouineur.latelier22.fr" target="_blank">lefouineur.latelier22.fr</a>
+        </p>
+      </div>
     </footer>
   </div>
 </body>

@@ -56,6 +56,8 @@
 </select>
 <button id="toggle-trash-btn">Afficher corbeille</button>
   <button onclick="window.location.href='history.php'" >Afficher historique</button>
+  <button onclick="openContactModal()">✏️ Modif contact</button>
+
 
   </div>
 
@@ -295,6 +297,24 @@
   </div>
 </div>
 
+
+<!-- Modale Contact -->
+<div id="contactModal" class="img-edit-modal" style="display:none; width:100%; max-width:900px; height:100%; max-height:90vh;">
+  <div class="img-edit-modal-content" style="min-width: min(720px, 95vw); position:relative;">
+    <button class="close" onclick="closeContactModal()">✖</button>
+    <h3 style="margin:0 0 8px">Texte de contact (footer)</h3>
+    <form id="formContact">
+      <textarea name="contact_value" id="contactValue" rows="8" style="width:100%; box-sizing:border-box;" placeholder="Ex : Pour tout renseignement : ..."></textarea>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button type="submit">💾 Enregistrer</button>
+        <button type="button" onclick="closeContactModal()">Annuler</button>
+      </div>
+      <small style="opacity:.8;">Tu peux mettre du HTML (liens &lt;a&gt;, sauts de ligne &lt;br&gt;, etc.).</small>
+    </form>
+  </div>
+</div>
+
+
 <style>
   .modal { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; }
   .modal-content { background:#fff; padding:20px; border-radius:8px; width:300px; }
@@ -357,3 +377,4 @@ ClassicEditor.create(document.querySelector('#description'), {
 
 </body>
 </html>
+

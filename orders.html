@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Commandes — Le Fouineur</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial;line-height:1.4;margin:0;background:#f7f7f8;color:#111}
+    header{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border-bottom:1px solid #e8e8ea;position:sticky;top:0}
+    header img{height:32px;border-radius:9999px;background:#fff}
+    header h1{font-size:18px;margin:0}
+    .wrap{max-width:1100px;margin:20px auto;padding:0 16px}
+    .card{background:#fff;border:1px solid #e8e8ea;border-radius:12px;padding:16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+    label{display:block;font-size:12px;color:#444;margin-bottom:6px}
+    input{border:1px solid #dcdde1;border-radius:8px;padding:10px 12px;font-size:14px;width:260px}
+    button{border:1px solid #111;background:#111;color:#fff;border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer}
+    button.ghost{background:#fff;color:#111;border-color:#cfcfd3}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:12px 0}
+    .left, .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th, td{padding:10px 8px;border-bottom:1px solid #eee;font-size:14px;vertical-align:top}
+    th{background:#fafafa;text-align:left;color:#333}
+    .badge{display:inline-block;padding:2px 8px;border-radius:9999px;font-size:12px;border:1px solid #ddd}
+    .badge.new{background:#eef6ff;color:#123;border-color:#cfe2ff}
+    .muted{color:#666;font-size:12px}
+    .spinner{display:none;position:fixed;inset:0;background:rgba(255,255,255,.6);backdrop-filter:saturate(1.2) blur(2px);align-items:center;justify-content:center;z-index:10}
+    .spinner>div{width:44px;height:44px;border-radius:50%;border:4px solid #111;border-top-color:transparent;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .error{background:#fff4f4;border:1px solid #ffdede;color:#a40000;padding:10px 12px;border-radius:8px;margin:8px 0}
+    .ok{background:#f3fff4;border:1px solid #d7f5da;color:#145c1c;padding:10px 12px;border-radius:8px;margin:8px 0}
+    .hint{color:#666;font-size:12px}
+  </style>
+</head>
+<body>
+<header>
+  <img src="https://lefouineur.latelier22.fr/images/logo-site2.png" alt="Logo" />
+  <h1>Commandes — Le Fouineur</h1>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <span id="auth-status" class="hint">Non connecté</span>
+    <button id="btn-logout" class="ghost" style="display:none">Se déconnecter</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- Connexion -->
+  <div class="card" id="login-card">
+    <h2 style="margin:0 0 12px 0;font-size:16px">Connexion client</h2>
+    <form id="login-form" class="row">
+      <div>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="username" value="shop@example.com" required />
+      </div>
+      <div>
+        <label for="password">Mot de passe</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" value="sylius" required />
+      </div>
+      <div>
+        <button type="submit" id="btn-login">Se connecter</button>
+      </div>
+    </form>
+    <div id="login-msg" class="hint" style="margin-top:8px"></div>
+  </div>
+
+  <!-- Liste des commandes -->
+  <div class="card" id="orders-card" style="margin-top:16px; display:none;">
+    <div class="toolbar">
+      <div class="left">
+        <strong>Commandes</strong>
+        <span id="orders-count" class="hint"></span>
+      </div>
+      <div class="right">
+        <label for="itemsPerPage">Par page</label>
+        <input id="itemsPerPage" type="number" min="1" max="100" value="30" style="width:86px" />
+        <label for="page">Page</label>
+        <input id="page" type="number" min="1" value="1" style="width:86px" />
+        <button id="btn-refresh" class="ghost">Actualiser</button>
+      </div>
+    </div>
+
+    <div id="orders-msg"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>ID</th>
+          <th>Token</th>
+          <th>Montant items</th>
+          <th>État</th>
+          <th>Canal</th>
+        </tr>
+      </thead>
+      <tbody id="orders-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Spinner -->
+<div class="spinner" id="spinner"><div></div></div>
+
+<script>
+// Utilise le proxy local (même origine) — plus de CORS
+const PROXY = '/api-proxy.php';
+
+const el = (id) => document.getElementById(id);
+const $status = el('auth-status');
+const $logout = el('btn-logout');
+const $loginCard = el('login-card');
+const $ordersCard = el('orders-card');
+const $loginForm = el('login-form');
+const $loginMsg = el('login-msg');
+const $ordersMsg = el('orders-msg');
+const $tbody = el('orders-body');
+const $count = el('orders-count');
+const $spinner = el('spinner');
+const $itemsPerPage = el('itemsPerPage');
+const $page = el('page');
+
+function showSpinner(v){ $spinner.style.display = v ? 'flex' : 'none'; }
+function setAuthState(token){
+  if (token){
+    localStorage.setItem('jwt', token);
+    $status.textContent = "Connecté";
+    $logout.style.display = '';
+    $loginCard.style.display = 'none';
+    $ordersCard.style.display = '';
+  } else {
+    localStorage.removeItem('jwt');
+    $status.textContent = "Non connecté";
+    $logout.style.display = 'none';
+    $loginCard.style.display = '';
+    $ordersCard.style.display = 'none';
+  }
+}
+
+async function login(email, password){
+  $loginMsg.textContent = '';
+  showSpinner(true);
+  try{
+    const r = await fetch(`${PROXY}?path=/shop/authentication-token`, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({ email, password })
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      throw new Error("HTTP " + r.status + " — " + t);
+    }
+    const data = await r.json();
+    if (!data.token) throw new Error("Réponse inattendue (pas de token).");
+    setAuthState(data.token);
+    $loginMsg.innerHTML = '<div class="ok">Connexion réussie.</div>';
+    await loadOrders(); // charger tout de suite
+  } catch(err){
+    console.error(err);
+    $loginMsg.innerHTML = '<div class="error">Échec de connexion : ' + (err.message || err) + '</div>';
+  } finally {
+    showSpinner(false);
+  }
+}
+
+async function loadOrders(){
+  const token = localStorage.getItem('jwt');
+  if (!token){ setAuthState(null); return; }
+
+  const page = Math.max(1, parseInt($page.value || '1', 10));
+  const ipp = Math.max(1, parseInt($itemsPerPage.value || '30', 10));
+
+  $ordersMsg.innerHTML = '';
+  $tbody.innerHTML = '';
+  $count.textContent = '';
+
+  showSpinner(true);
+  try{
+    const url = `${PROXY}?path=/shop/orders&page=${page}&itemsPerPage=${ipp}`;
+    const r = await fetch(url, {
+      headers: {
+        'accept': 'application/ld+json',
+        'authorization': 'Bearer ' + token
+      }
+    });
+    if (r.status === 401 || r.status === 403){
+      setAuthState(null);
+      $ordersMsg.innerHTML = '<div class="error">Session expirée. Reconnectez‑vous.</div>';
+      return;
+    }
+    if (!r.ok){
+      const t = await r.text();
+      throw new Error("HTTP " + r.status + " — " + t);
+    }
+    const data = await r.json();
+
+    const items = Array.isArray(data['hydra:member']) ? data['hydra:member'] : [];
+    const total = (typeof data['hydra:totalItems'] === 'number') ? data['hydra:totalItems'] : items.length;
+
+    $count.textContent = `(${total} total)`;
+    if (items.length === 0){
+      $tbody.innerHTML = '<tr><td colspan="6" class="muted">Aucune commande.</td></tr>';
+      return;
+    }
+
+    const rowsHtml = items.map(o => {
+      const badgeCls = 'badge ' + (o.state === 'new' ? 'new' : '');
+      return `
+        <tr>
+          <td>${o.number ?? '—'}</td>
+          <td>${o.id ?? '—'}</td>
+          <td><span class="muted" title="${o.tokenValue || ''}">${(o.tokenValue || '').slice(0,16)}…</span></td>
+          <td>${o.itemsTotal ?? 0}</td>
+          <td><span class="${badgeCls}">${o.state ?? '—'}</span></td>
+          <td><span class="muted">${o.channel ?? '—'}</span></td>
+        </tr>
+      `;
+    }).join('');
+    $tbody.innerHTML = rowsHtml;
+
+  } catch(err){
+    console.error(err);
+    $ordersMsg.innerHTML = '<div class="error">Erreur de chargement : ' + (err.message || err) + '</div>';
+  } finally {
+    showSpinner(false);
+  }
+}
+
+// Events
+$loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const email = (el('email').value || '').trim();
+  const password = el('password').value || '';
+  if (!email || !password){
+    $loginMsg.innerHTML = '<div class="error">Email et mot de passe requis.</div>';
+    return;
+  }
+  login(email, password);
+});
+
+el('btn-refresh').addEventListener('click', () => loadOrders());
+$logout.addEventListener('click', () => {
+  setAuthState(null);
+  $loginMsg.textContent = '';
+  $ordersMsg.textContent = '';
+});
+
+$itemsPerPage.addEventListener('change', () => loadOrders());
+$page.addEventListener('change', () => loadOrders());
+
+// Bootstrap
+(function init(){
+  const token = localStorage.getItem('jwt');
+  setAuthState(token);
+  if (token) loadOrders();
+})();
+</script>
+</body>
+</html>

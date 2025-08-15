@@ -1,3 +1,6 @@
+const API_URL = typeof window.API_URL !== 'undefined' ? window.API_URL : 'api.php';
+
+
 // --- Config : CSV ou données locales ---
 const USE_LOCAL_DATA = false;   // false => lit data/montres.csv
 const CSV_PATH = 'data/montres.csv';
@@ -405,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMontres();
 
   } else {
-   
+    fetchContactFooter();
     loadFromCSV();
   }
 });
@@ -418,3 +421,21 @@ window.closeModal    = closeModal;
 window.nextImage     = nextImage;
 window.prevImage     = prevImage;
 window.toggleMore    = toggleMore;
+
+
+async function fetchContactFooter(){
+  console.log('Récupération du contact footer depuis API...');
+  try{
+    const r = await fetch(API_URL + '?action=get_contact');
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const j = await r.json();
+    const box = document.getElementById('contactFooter');
+    if (box && typeof j?.value === 'string' && j.value.trim() !== '') {
+      box.innerHTML = j.value; // on autorise HTML admin
+    }
+  }catch(e){
+    console.warn('Contact footer par défaut (pas de valeur DB).', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', fetchContactFooter);
