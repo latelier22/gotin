@@ -97,6 +97,42 @@
   </div>
 </div>
 
+<!-- Liste des produits -->
+<div class="card" id="products-card" style="margin-top:16px;">
+  <div class="toolbar">
+    <div class="left">
+      <strong>Produits</strong>
+      <span id="products-count" class="hint"></span>
+    </div>
+    <div class="right">
+      <label for="p_itemsPerPage">Par page</label>
+      <input id="p_itemsPerPage" type="number" min="1" max="100" value="30" style="width:86px" />
+      <label for="p_page">Page</label>
+      <input id="p_page" type="number" min="1" value="1" style="width:86px" />
+      <button id="btn-products-refresh" class="ghost">Actualiser</button>
+    </div>
+  </div>
+
+  <div id="products-msg"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Nom</th>
+        <th>Slug</th>
+        <th>Créé</th>
+        <th>Image</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="products-body"></tbody>
+  </table>
+</div>
+
+
+
+
 <!-- Spinner -->
 <div class="spinner" id="spinner"><div></div></div>
 
@@ -256,5 +292,111 @@ $page.addEventListener('change', () => loadOrders());
   if (token) loadOrders();
 })();
 </script>
+
+<script>
+const $pCount   = document.getElementById('products-count');
+const $pMsg     = document.getElementById('products-msg');
+const $pBody    = document.getElementById('products-body');
+const $pPage    = document.getElementById('p_page');
+const $pIpp     = document.getElementById('p_itemsPerPage');
+
+async function loadProducts(){
+  $pMsg.innerHTML = ''; $pBody.innerHTML = ''; $pCount.textContent = '';
+
+  const page = Math.max(1, parseInt($pPage.value || '1', 10));
+  const ipp  = Math.max(1, parseInt($pIpp.value || '30', 10));
+  const token = localStorage.getItem('jwt');
+
+  try{
+    const data = await proxyFetch('/shop/products', {
+      // Pas de body ici; on passe la pagination en query du proxy
+      query: `page=${page}&itemsPerPage=${ipp}`,
+      headers: token ? { authorization: `Bearer ${token}` } : {}
+    });
+
+    const items = Array.isArray(data['hydra:member']) ? data['hydra:member'] : [];
+    const total = (typeof data['hydra:totalItems'] === 'number') ? data['hydra:totalItems'] : items.length;
+
+    $pCount.textContent = `(${total} total)`;
+
+    if(items.length === 0){
+      $pBody.innerHTML = '<tr><td colspan="5" class="muted">Aucun produit.</td></tr>';
+      return;
+    }
+function getImageUrl(path, filter = 'sylius_admin_product_small_thumbnail') {
+  if (!path) return '';
+
+  const base = 'https://lefouineur.latelier22.fr/media/cache/resolve/';
+  
+  // Supprimer "media/image/" ou "media/images/" au début
+  let cleanPath = path.replace(/^\/?media\/images?\//, '');
+
+  return `${base}${filter}/${cleanPath}`;
+}
+
+
+
+
+    const rows = items.map(p => {
+  const imgPath = (p.images && p.images[0] && p.images[0].path) ? p.images[0].path : '';
+  const newPath = getImageUrl(imgPath, 'sylius_shop_product_original');
+  console.log('Image URL:', newPath);
+  const imgHtml = imgPath ? `<img src="${newPath}" alt="" style="height:40px;border:1px solid #eee;border-radius:6px;background:#fff">` : '—';
+  return `
+    <tr>
+      <td>${p.code ?? '—'}</td>
+      <td>${p.name ?? '—'}</td>
+      <td>${p.slug ?? '—'}</td>
+      <td>${p.createdAt ?? '—'}</td>
+      <td>${imgHtml}</td>
+      <td> <button onclick="window.location.href='https://lefouineur.latelier22.fr/fr_FR/products/${p.slug}'">Voir</button></td>
+    </tr>
+  `;
+}).join('');
+$pBody.innerHTML = rows;
+
+  }catch(e){
+    console.error(e);
+    $pMsg.innerHTML = `<div class="error">Erreur produits : ${e.message}</div>`;
+  }
+}
+
+// Événements
+document.getElementById('btn-products-refresh')?.addEventListener('click', loadProducts);
+$pIpp.addEventListener('change', loadProducts);
+$pPage.addEventListener('change', loadProducts);
+
+
+// Au chargement (si tu veux charger d’office)
+loadProducts();
+
+async function proxyFetch(path, opts = {}) {
+  let url = 'api-proxy.php?path=' + encodeURIComponent(path);
+  if (opts.query) {
+    url += (url.includes('?') ? '&' : '?') + opts.query;
+  }
+
+  const fetchOpts = {
+    method: opts.method || 'GET',
+    headers: opts.headers || {}
+  };
+
+  if (opts.body) {
+    fetchOpts.body = typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body);
+    if (!fetchOpts.headers['Content-Type']) {
+      fetchOpts.headers['Content-Type'] = 'application/json';
+    }
+  }
+
+  const res = await fetch(url, fetchOpts);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+
+
+</script>
+
+
 </body>
 </html>

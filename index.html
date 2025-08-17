@@ -105,5 +105,30 @@
       </div>
     </footer>
   </div>
+
+<!-- Modale Compte -->
+<div id="account-modal" style="display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;background:rgba(0,0,0,.4)">
+  <div style="background:#520808;border-radius:12px;max-width:520px;width:92%;padding:16px;border:1px solid #e8e8ea;box-shadow:0 10px 30px rgba(0,0,0,.08);">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+      <h3 style="margin:0;font-size:18px">Mon compte</h3>
+      <button id="account-close" class="ghost" style="border:1px solid #ccc;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer">Fermer</button>
+    </div>
+
+    <div id="account-error" style="display:none;background:#fff4f4;border:1px solid #ffdede;color:#a40000;padding:8px;border-radius:8px;margin:8px 0"></div>
+
+    <div style="display:grid;grid-template-columns:140px 1fr;gap:8px;font-size:14px">
+      <div class="muted">Email</div><div id="acc-email">—</div>
+      <div class="muted">Nom</div><div id="acc-name">—</div>
+      <div class="muted">Genre</div><div id="acc-gender">—</div>
+      <div class="muted">Newsletter</div><div id="acc-news">—</div>
+      <div class="muted">Vérifié</div><div id="acc-verified">—</div>
+      <div class="muted">Adresse par défaut</div><div id="acc-address">—</div>
+    </div>
+  </div>
+</div>
+
+
+
+
 </body>
 </html>

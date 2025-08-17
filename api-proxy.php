@@ -39,9 +39,13 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 // Exécution
 $resBody = curl_exec($ch);
 $http    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$ctype   = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: 'application/json; charset=utf-8';
 curl_close($ch);
 
 // Réponse au client
-header('Content-Type: application/json; charset=utf-8');
 http_response_code($http);
+header('Content-Type: ' . $ctype);
 echo $resBody;
+
+
+
